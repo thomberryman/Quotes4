@@ -36,6 +36,7 @@ describe("dashboard filter helpers", () => {
       projectId: undefined,
       disciplineId: undefined,
       status: "awarded",
+      scenarioKey: "base",
     });
 
     expect(
@@ -43,6 +44,7 @@ describe("dashboard filter helpers", () => {
     ).toEqual({
       fromMonth: "2025-10",
       toMonth: "2026-09",
+      scenarioKey: "base",
     });
   });
 });

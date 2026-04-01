@@ -120,6 +120,7 @@
 4. Surface blocking and warning checks in the forecast workspace UI so operators see top-level banners, scenario and confidence callouts, inline month or line flags, and repeated blocking errors before submit or lock.
 5. Record suspicious-but-current behaviours, rule severity, and UI surfacing guidance in short validation docs, including cases where the engine can return plausible numbers with weak underlying evidence.
 6. Run the targeted API and web test suites plus the relevant frontend build or type checks, then capture any residual gaps or untested risks in the handoff.
+7. Resolve remaining frontend verification gaps by fixing the Next server chunk emission issue blocking `@quotes4/web` builds and by aligning dashboard filter coverage with the current default-scenario behaviour.
 
 ## Checks
 
