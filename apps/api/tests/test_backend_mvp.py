@@ -7,6 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 
+from app.core.config import get_settings
+from app.main import app
 from app.models import BackgroundJob, UploadedFile
 from app.models.enums import BackgroundJobStatus
 
@@ -23,7 +25,7 @@ def _bearer_headers(access_token: str) -> dict[str, str]:
 
 
 def _csrf_headers(client: TestClient) -> dict[str, str]:
-    csrf_token = client.cookies.get("quotes4_csrf_token")
+    csrf_token = client.cookies.get(get_settings().auth_csrf_cookie_name)
     assert csrf_token
     return {"X-CSRF-Token": csrf_token}
 
@@ -83,6 +85,7 @@ def _invite_accept_and_login(
 
 
 def test_auth_invite_refresh_and_logout(client: TestClient) -> None:
+    settings = get_settings()
     admin_session = _login(
         client,
         email=os.environ["DEV_ADMIN_EMAIL"],
@@ -111,9 +114,9 @@ def test_auth_invite_refresh_and_logout(client: TestClient) -> None:
     )
     cookie_session = _assert_status(cookie_login_response, 200)
     set_cookie = ", ".join(cookie_login_response.headers.get_list("set-cookie"))
-    assert "quotes4_access_token=" in set_cookie
-    assert "quotes4_refresh_token=" in set_cookie
-    assert "quotes4_csrf_token=" in set_cookie
+    assert f"{settings.auth_access_cookie_name}=" in set_cookie
+    assert f"{settings.auth_refresh_cookie_name}=" in set_cookie
+    assert f"{settings.auth_csrf_cookie_name}=" in set_cookie
     assert "HttpOnly" in set_cookie
 
     cookie_me = _assert_status(client.get("/api/v1/auth/me"), 200)
@@ -157,6 +160,7 @@ def test_auth_invite_refresh_and_logout(client: TestClient) -> None:
 
 
 def test_cookie_authenticated_unsafe_requests_require_csrf(client: TestClient) -> None:
+    settings = get_settings()
     _login(
         client,
         email=os.environ["DEV_ADMIN_EMAIL"],
@@ -189,7 +193,7 @@ def test_cookie_authenticated_unsafe_requests_require_csrf(client: TestClient) -
         200,
     )
     assert refreshed["tokenType"] == "bearer"
-    assert client.cookies.get("quotes4_csrf_token") != stale_csrf_headers["X-CSRF-Token"]
+    assert client.cookies.get(settings.auth_csrf_cookie_name) != stale_csrf_headers["X-CSRF-Token"]
 
     denied_logout = client.delete("/api/v1/auth/session")
     assert denied_logout.status_code == 403
@@ -199,6 +203,31 @@ def test_cookie_authenticated_unsafe_requests_require_csrf(client: TestClient) -
         200,
     )
     assert logout["message"] == "Session cleared."
+
+
+def test_auth_cookie_names_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AUTH_ACCESS_COOKIE_NAME", "quotes4_demo_access")
+    monkeypatch.setenv("AUTH_REFRESH_COOKIE_NAME", "quotes4_demo_refresh")
+    monkeypatch.setenv("AUTH_CSRF_COOKIE_NAME", "quotes4_demo_csrf")
+    get_settings.cache_clear()
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/auth/session",
+            json={
+                "email": os.environ["DEV_ADMIN_EMAIL"],
+                "password": os.environ["DEV_ADMIN_PASSWORD"],
+            },
+        )
+
+        payload = _assert_status(response, 200)
+        assert payload["tokenType"] == "bearer"
+
+        set_cookie = ", ".join(response.headers.get_list("set-cookie"))
+        assert "quotes4_demo_access=" in set_cookie
+        assert "quotes4_demo_refresh=" in set_cookie
+        assert "quotes4_demo_csrf=" in set_cookie
+        assert client.cookies.get("quotes4_demo_csrf")
 
 
 def test_failed_auth_attempts_are_written_to_audit_log(client: TestClient) -> None:

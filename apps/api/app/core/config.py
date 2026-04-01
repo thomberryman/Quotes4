@@ -13,6 +13,13 @@ def _get_csv(value: str | None, default: tuple[str, ...]) -> tuple[str, ...]:
     return parsed or default
 
 
+def _get_text(value: str | None, default: str) -> str:
+    if value is None:
+        return default
+    normalized = value.strip()
+    return normalized or default
+
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = field(default_factory=lambda: os.getenv("APP_NAME", "Quotes4 API"))
@@ -82,6 +89,24 @@ class Settings:
     mailer_base_url: str = field(
         default_factory=lambda: os.getenv("MAILER_BASE_URL", "http://localhost:8025")
     )
+    auth_access_cookie_name: str = field(
+        default_factory=lambda: _get_text(
+            os.getenv("AUTH_ACCESS_COOKIE_NAME"),
+            "quotes4_access_token",
+        )
+    )
+    auth_refresh_cookie_name: str = field(
+        default_factory=lambda: _get_text(
+            os.getenv("AUTH_REFRESH_COOKIE_NAME"),
+            "quotes4_refresh_token",
+        )
+    )
+    auth_csrf_cookie_name: str = field(
+        default_factory=lambda: _get_text(
+            os.getenv("AUTH_CSRF_COOKIE_NAME"),
+            "quotes4_csrf_token",
+        )
+    )
 
     @property
     def use_secure_cookies(self) -> bool:
@@ -108,6 +133,14 @@ class Settings:
             raise RuntimeError(
                 "Wildcard allowed origins are not permitted when secure cookies are enabled."
             )
+        if len(
+            {
+                self.auth_access_cookie_name,
+                self.auth_refresh_cookie_name,
+                self.auth_csrf_cookie_name,
+            }
+        ) != 3:
+            raise RuntimeError("Auth cookie names must be distinct for access, refresh, and CSRF.")
 
 
 @lru_cache(maxsize=1)

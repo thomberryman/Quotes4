@@ -3,11 +3,10 @@ from __future__ import annotations
 from secrets import token_urlsafe
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from app.core.auth import (
-    CSRF_COOKIE_NAME,
     CurrentSubject,
     get_current_subject,
     require_permissions,
@@ -38,7 +37,7 @@ RolesAssignSubject = Annotated[CurrentSubject, Depends(require_permissions("role
 def _set_access_cookie(response: Response, access_token: str, *, max_age_seconds: int) -> None:
     settings = get_settings()
     response.set_cookie(
-        key="quotes4_access_token",
+        key=settings.auth_access_cookie_name,
         value=access_token,
         httponly=True,
         secure=settings.use_secure_cookies,
@@ -51,7 +50,7 @@ def _set_access_cookie(response: Response, access_token: str, *, max_age_seconds
 def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
     settings = get_settings()
     response.set_cookie(
-        key="quotes4_refresh_token",
+        key=settings.auth_refresh_cookie_name,
         value=refresh_token,
         httponly=True,
         secure=settings.use_secure_cookies,
@@ -64,7 +63,7 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
 def _set_csrf_cookie(response: Response, csrf_token: str) -> None:
     settings = get_settings()
     response.set_cookie(
-        key=CSRF_COOKIE_NAME,
+        key=settings.auth_csrf_cookie_name,
         value=csrf_token,
         httponly=False,
         secure=settings.use_secure_cookies,
@@ -75,9 +74,13 @@ def _set_csrf_cookie(response: Response, csrf_token: str) -> None:
 
 
 def _clear_session_cookies(response: Response) -> None:
-    response.delete_cookie("quotes4_access_token", path="/")
-    response.delete_cookie("quotes4_refresh_token", path=f"{get_settings().api_base_path}/auth")
-    response.delete_cookie(CSRF_COOKIE_NAME, path="/")
+    settings = get_settings()
+    response.delete_cookie(settings.auth_access_cookie_name, path="/")
+    response.delete_cookie(
+        settings.auth_refresh_cookie_name,
+        path=f"{settings.api_base_path}/auth",
+    )
+    response.delete_cookie(settings.auth_csrf_cookie_name, path="/")
 
 
 def _set_session_cookies(
@@ -137,9 +140,10 @@ def refresh_session(
     request: Request,
     response: Response,
     session: DbSession,
-    cookie_refresh_token: str | None = Cookie(default=None, alias="quotes4_refresh_token"),
-    cookie_csrf_token: str | None = Cookie(default=None, alias=CSRF_COOKIE_NAME),
 ) -> SessionResponse:
+    settings = get_settings()
+    cookie_refresh_token = request.cookies.get(settings.auth_refresh_cookie_name)
+    cookie_csrf_token = request.cookies.get(settings.auth_csrf_cookie_name)
     refresh_token = payload.refresh_token or cookie_refresh_token
     if refresh_token is None:
         raise ApiProblemException(401, "Refresh token is missing.", "Authentication Required")
@@ -157,9 +161,10 @@ def destroy_session(
     request: Request,
     response: Response,
     session: DbSession,
-    cookie_refresh_token: str | None = Cookie(default=None, alias="quotes4_refresh_token"),
-    cookie_csrf_token: str | None = Cookie(default=None, alias=CSRF_COOKIE_NAME),
 ) -> LogoutResponse:
+    settings = get_settings()
+    cookie_refresh_token = request.cookies.get(settings.auth_refresh_cookie_name)
+    cookie_csrf_token = request.cookies.get(settings.auth_csrf_cookie_name)
     if cookie_refresh_token is not None:
         validate_csrf_request(request, cookie_csrf_token)
     auth_service.logout(session, cookie_refresh_token)

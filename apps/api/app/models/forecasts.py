@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, IdentifierMixin, TimestampMixin
+from app.models.base import Base, IdentifierMixin, JsonObjectType, TimestampMixin
 from app.models.enums import ForecastAllocationMethod, ForecastVersionStatus, ProjectOutcomeType
 
 if TYPE_CHECKING:
@@ -87,6 +87,26 @@ class ForecastVersion(IdentifierMixin, TimestampMixin, Base):
     )
     revision_reason: Mapped[str | None] = mapped_column(Text(), nullable=True)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    scenario_key: Mapped[str] = mapped_column(String(32), default="base")
+    engine_source: Mapped[str] = mapped_column(String(100), default="unified_forecast_engine")
+    prediction_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("prediction_runs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    prediction_scenario_key: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    confidence_score: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    data_sufficiency_score: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    fallback_tier: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    explanation_summary_json: Mapped[dict[str, object] | None] = mapped_column(
+        "explanation_summary",
+        JsonObjectType,
+        nullable=True,
+    )
+    change_summary_json: Mapped[dict[str, object] | None] = mapped_column(
+        "change_summary",
+        JsonObjectType,
+        nullable=True,
+    )
     created_by_id: Mapped[str | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
@@ -156,6 +176,25 @@ class ForecastLine(IdentifierMixin, TimestampMixin, Base):
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2))
     currency_code: Mapped[str] = mapped_column(String(3))
     notes: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    forecast_method_key: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    allocation_profile_key: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    sequencing_template_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    sequencing_stage_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    overlap_percent: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    confidence_score: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    data_sufficiency_score: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    fallback_tier: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    actuals_to_date_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    remaining_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    forecast_inputs_json: Mapped[dict[str, object] | None] = mapped_column(
+        "forecast_inputs",
+        JsonObjectType,
+        nullable=True,
+    )
+    explanation_json: Mapped[list[dict[str, object]] | None] = mapped_column(
+        JsonObjectType,
+        nullable=True,
+    )
 
     forecast_version: Mapped[ForecastVersion] = relationship(back_populates="lines")
     discipline: Mapped[Discipline | None] = relationship(back_populates="forecast_lines")
@@ -188,6 +227,15 @@ class MonthlyForecastAllocation(IdentifierMixin, TimestampMixin, Base):
     )
     month: Mapped[date] = mapped_column(Date())
     amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    low_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    high_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    actual_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    allocation_source: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    source_context_json: Mapped[dict[str, object] | None] = mapped_column(
+        "source_context",
+        JsonObjectType,
+        nullable=True,
+    )
     manual_note: Mapped[str | None] = mapped_column(Text(), nullable=True)
 
     forecast_line: Mapped[ForecastLine] = relationship(back_populates="allocations")

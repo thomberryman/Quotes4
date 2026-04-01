@@ -307,10 +307,7 @@ def test_project_predictive_guidance_returns_quote_mix_spread_and_risk_flags(
     assert payload["comparableQuoteRange"] is not None
     assert payload["actualInformedQuoteRange"] is not None
     assert payload["likelyQuoteRange"]["basis"] == "actual_informed_history"
-    assert (
-        payload["likelyQuoteRange"]["median"]
-        > payload["comparableQuoteRange"]["median"]
-    )
+    assert payload["likelyQuoteRange"]["median"] > payload["comparableQuoteRange"]["median"]
     assert payload["modelInfo"]["comparableProjectsUsed"] == 3
     assert payload["modelInfo"]["monthlyProfileCount"] == 3
 
@@ -334,9 +331,9 @@ def test_project_predictive_guidance_returns_quote_mix_spread_and_risk_flags(
     assert "historical_overrun_pattern" in risk_keys
     assert "schedule_compression" in risk_keys
     assert payload["overrunRisk"]["level"] in {"medium", "high"}
-    assert {
-        signal["key"] for signal in payload["riskSignals"]
-    }.isdisjoint({"missing_target_schedule_calendar", "insufficient_monthly_history"})
+    assert {signal["key"] for signal in payload["riskSignals"]}.isdisjoint(
+        {"missing_target_schedule_calendar", "insufficient_monthly_history"}
+    )
 
 
 def test_project_predictive_guidance_surfaces_missing_target_calendar_signal(
@@ -538,7 +535,20 @@ def test_prediction_run_endpoints_support_overrides_scenarios_and_forecast_promo
     assert forecast_version is not None
     assert forecast_version.title == "Downside reforecast draft"
     assert float(forecast_version.probability_percent) == 55
+    assert forecast_version.scenario_key == "downside"
+    assert forecast_version.engine_source == "unified_forecast_engine"
+    assert forecast_version.prediction_run_id == run_id
+    assert forecast_version.prediction_scenario_key == "downside"
     assert len(forecast_version.lines) >= 1
+    assert any(
+        line.forecast_method_key in {"hybrid", "curve", "milestone"}
+        for line in forecast_version.lines
+    )
+    assert any(
+        allocation.low_amount is not None and allocation.high_amount is not None
+        for line in forecast_version.lines
+        for allocation in line.allocations
+    )
 
     response = client.get(
         f"/api/v1/projects/project_pred_run_target/prediction-runs/{run_id}",

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import type { PropsWithChildren } from "react";
 
+import { workspaceConfig } from "@/lib/workspace-config";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Quotes4",
-  description: "Operational quoting, forecasting, quote review, and actuals analysis for post production."
+  title: workspaceConfig.appDisplayName,
+  description: workspaceConfig.productDescription
 };
 
 export default function RootLayout({ children }: PropsWithChildren) {

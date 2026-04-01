@@ -9,7 +9,21 @@ from datetime import UTC, date, datetime
 from io import StringIO
 from statistics import median
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
 from app.core.errors import ApiProblemException
+from app.models import (
+    Forecast,
+    ForecastVersion,
+    Project,
+    ProjectBenchmarkDisciplineSummary,
+    ProjectBenchmarkSummary,
+    ProjectDiscipline,
+    ProjectParty,
+    Quote,
+)
+from app.models.enums import ProjectPartyRole
 from app.modules.dashboards.schemas import (
     AwardedLostMonthPoint,
     AwardedLostTrendSection,
@@ -36,6 +50,7 @@ from app.modules.dashboards.schemas import (
     SalesPipelineSection,
     VarianceBucketSummary,
 )
+from app.modules.forecasts.service import forecast_service
 
 STATUS_LABELS = {
     "bid": "Bid",
@@ -66,6 +81,7 @@ VIEW_TITLES = {
 }
 
 DEFAULT_REFERENCE_DATE = date(2026, 3, 31)
+BOOKED_STATUSES = {"awarded", "active", "complete"}
 
 
 @dataclass(frozen=True)
@@ -111,8 +127,13 @@ class BenchmarkRecord:
 class DisciplineMonthRecord:
     month: str
     discipline_id: str
+    discipline_name: str
     gross_amount: float
     weighted_amount: float
+    low_amount: float
+    high_amount: float
+    actual_amount: float
+    booked_amount: float
 
 
 @dataclass(frozen=True)
@@ -135,10 +156,21 @@ class DashboardProjectRecord:
     disciplines: tuple[str, ...]
     monthly_values: tuple[DisciplineMonthRecord, ...]
     benchmark: BenchmarkRecord | None = None
+    currency_code: str = "GBP"
+    forecast_version_id: str | None = None
+    forecast_status: str | None = None
+    forecast_scenario_key: str | None = None
+    forecast_confidence_score: float | None = None
+    data_sufficiency_score: float | None = None
+    fallback_tier: str | None = None
 
     @property
     def weighted_value(self) -> float:
         return round(sum(item.weighted_amount for item in self.monthly_values), 2)
+
+    @property
+    def booked_value(self) -> float:
+        return round(sum(item.booked_amount for item in self.monthly_values), 2)
 
     @property
     def actuals_status(self) -> str:
@@ -155,6 +187,7 @@ class DashboardFilters:
     project_id: str | None
     discipline_id: str | None
     status: str | None
+    scenario_key: str | None
 
 
 def _benchmark(
@@ -191,8 +224,13 @@ def _monthly(
     return DisciplineMonthRecord(
         month=month,
         discipline_id=discipline_id,
+        discipline_name=DISCIPLINE_LABELS.get(discipline_id, discipline_id.title()),
         gross_amount=gross_amount,
         weighted_amount=weighted_amount,
+        low_amount=gross_amount,
+        high_amount=gross_amount,
+        actual_amount=0.0,
+        booked_amount=gross_amount,
     )
 
 
@@ -403,6 +441,7 @@ FIXTURE_PROJECTS: tuple[DashboardProjectRecord, ...] = (
 class DashboardService:
     def get_operational_dashboard(
         self,
+        session: Session,
         *,
         from_month: str | None,
         to_month: str | None,
@@ -410,6 +449,7 @@ class DashboardService:
         project_id: str | None,
         discipline_id: str | None,
         status: str | None,
+        scenario_key: str | None,
     ) -> OperationalDashboardResponse:
         filters = self._normalize_filters(
             from_month=from_month,
@@ -418,12 +458,13 @@ class DashboardService:
             project_id=project_id,
             discipline_id=discipline_id,
             status=status,
+            scenario_key=scenario_key,
         )
-        projects = self._filtered_projects(filters)
+        projects = self._filtered_projects(session, filters)
         return OperationalDashboardResponse(
             generated_at=datetime.now(UTC),
             applied_filters=DashboardAppliedFilters(**filters.__dict__),
-            filter_options=self._build_filter_options(),
+            filter_options=self._build_filter_options(session),
             summary_cards=self._build_summary_cards(projects, filters),
             sales_pipeline=self._build_sales_pipeline(projects),
             monthly_revenue_forecast=self._build_monthly_revenue_forecast(projects, filters),
@@ -437,6 +478,7 @@ class DashboardService:
 
     def get_drilldown(
         self,
+        session: Session,
         view: str,
         *,
         from_month: str | None,
@@ -445,6 +487,7 @@ class DashboardService:
         project_id: str | None,
         discipline_id: str | None,
         status: str | None,
+        scenario_key: str | None,
     ) -> DashboardDrilldownResponse:
         filters = self._normalize_filters(
             from_month=from_month,
@@ -453,8 +496,9 @@ class DashboardService:
             project_id=project_id,
             discipline_id=discipline_id,
             status=status,
+            scenario_key=scenario_key,
         )
-        projects = self._filtered_projects(filters)
+        projects = self._filtered_projects(session, filters)
 
         if view == "sales_pipeline":
             return self._build_sales_pipeline_drilldown(projects)
@@ -483,23 +527,45 @@ class DashboardService:
             writer.writerow({column.key: row.get(column.key) for column in drilldown.columns})
         return buffer.getvalue()
 
-    def _build_filter_options(self) -> DashboardFilterOptions:
-        clients = sorted({(project.client_id, project.client_name) for project in FIXTURE_PROJECTS}, key=lambda item: item[1])
-        projects = sorted(((project.id, project.name) for project in FIXTURE_PROJECTS), key=lambda item: item[1])
+    def _build_filter_options(self, session: Session) -> DashboardFilterOptions:
+        projects = self._load_dashboard_projects(session, scenario_key=None)
+        clients = sorted(
+            {(project.client_id, project.client_name) for project in projects},
+            key=lambda item: item[1],
+        )
+        project_options = sorted(
+            ((project.id, project.name) for project in projects),
+            key=lambda item: item[1],
+        )
         disciplines = sorted(
             {
-                (discipline_id, DISCIPLINE_LABELS.get(discipline_id, discipline_id.replace("_", " ").title()))
-                for project in FIXTURE_PROJECTS
-                for discipline_id in project.disciplines
+                (
+                    item.discipline_id,
+                    item.discipline_name,
+                )
+                for project in projects
+                for item in project.monthly_values
             },
             key=lambda item: item[1],
+        )
+        scenario_keys = sorted(
+            {
+                value
+                for value in session.scalars(select(ForecastVersion.scenario_key).distinct())
+                if isinstance(value, str) and value
+            }
+            | {"base"}
         )
         statuses = [(status, label) for status, label in STATUS_LABELS.items()]
         return DashboardFilterOptions(
             clients=[DashboardOption(id=client_id, label=label) for client_id, label in clients],
-            projects=[DashboardOption(id=project_id, label=label) for project_id, label in projects],
+            projects=[DashboardOption(id=project_id, label=label) for project_id, label in project_options],
             disciplines=[DashboardOption(id=discipline_id, label=label) for discipline_id, label in disciplines],
             statuses=[DashboardOption(id=status, label=label) for status, label in statuses],
+            scenarios=[
+                DashboardOption(id=key, label=STATUS_LABELS.get(key, key.replace("_", " ").title()))
+                for key in scenario_keys
+            ],
         )
 
     def _normalize_filters(
@@ -511,6 +577,7 @@ class DashboardService:
         project_id: str | None,
         discipline_id: str | None,
         status: str | None,
+        scenario_key: str | None,
     ) -> DashboardFilters:
         default_from = self._offset_month(DEFAULT_REFERENCE_DATE, -5)
         default_to = self._offset_month(DEFAULT_REFERENCE_DATE, 6)
@@ -533,10 +600,49 @@ class DashboardService:
             project_id=project_id,
             discipline_id=discipline_id,
             status=status,
+            scenario_key=scenario_key or "base",
         )
 
-    def _filtered_projects(self, filters: DashboardFilters) -> list[DashboardProjectRecord]:
-        items = list(FIXTURE_PROJECTS)
+    def _load_dashboard_projects(
+        self,
+        session: Session,
+        *,
+        scenario_key: str | None,
+    ) -> list[DashboardProjectRecord]:
+        project_entities = list(
+            session.scalars(
+                select(Project).options(
+                    selectinload(Project.parties).selectinload(ProjectParty.company),
+                    selectinload(Project.outcomes),
+                    selectinload(Project.disciplines).selectinload(ProjectDiscipline.discipline),
+                    selectinload(Project.quotes).selectinload(Quote.versions),
+                    selectinload(Project.forecast).selectinload(Forecast.versions),
+                    selectinload(Project.benchmark_summary)
+                    .selectinload(ProjectBenchmarkSummary.discipline_summaries)
+                    .selectinload(ProjectBenchmarkDisciplineSummary.discipline),
+                )
+            )
+        )
+        records: list[DashboardProjectRecord] = []
+        for project in project_entities:
+            selected_version = self._select_forecast_version(project, scenario_key=scenario_key)
+            if scenario_key not in {None, "base"} and selected_version is None:
+                continue
+            records.append(
+                self._to_dashboard_project_record(
+                    session,
+                    project,
+                    selected_version=selected_version,
+                )
+            )
+        return records
+
+    def _filtered_projects(
+        self,
+        session: Session,
+        filters: DashboardFilters,
+    ) -> list[DashboardProjectRecord]:
+        items = self._load_dashboard_projects(session, scenario_key=filters.scenario_key)
         if filters.client_id is not None:
             items = [project for project in items if project.client_id == filters.client_id]
         if filters.project_id is not None:
@@ -551,11 +657,209 @@ class DashboardService:
             items = [project for project in items if project.status == filters.status]
         return items
 
+    def _currency_code(self, projects: list[DashboardProjectRecord]) -> str:
+        return next(
+            (project.currency_code for project in projects if project.currency_code),
+            "GBP",
+        )
+
+    def _select_forecast_version(
+        self,
+        project: Project,
+        *,
+        scenario_key: str | None,
+    ) -> ForecastVersion | None:
+        forecast = project.forecast
+        if forecast is None:
+            return None
+        versions = sorted(forecast.versions, key=lambda item: item.version_number, reverse=True)
+        if not versions:
+            return None
+        normalized_scenario = scenario_key or "base"
+        matching_version = next(
+            (item for item in versions if item.scenario_key == normalized_scenario),
+            None,
+        )
+        if matching_version is not None:
+            return matching_version
+        if normalized_scenario == "base":
+            current_version = next(
+                (item for item in versions if item.id == forecast.current_version_id),
+                None,
+            )
+            if current_version is not None:
+                return current_version
+        return None
+
+    def _resolve_client(self, project: Project) -> tuple[str, str]:
+        primary_client = next(
+            (
+                party
+                for party in project.parties
+                if party.role == ProjectPartyRole.client and party.is_primary and party.company is not None
+            ),
+            None,
+        )
+        if primary_client is not None and primary_client.company is not None:
+            return primary_client.company.id, primary_client.company.name
+        fallback_client = next(
+            (
+                party
+                for party in project.parties
+                if party.role == ProjectPartyRole.client and party.company is not None
+            ),
+            None,
+        )
+        if fallback_client is not None and fallback_client.company is not None:
+            return fallback_client.company.id, fallback_client.company.name
+        return f"unknown-client-{project.id}", "Unknown client"
+
+    def _resolve_quote_total(self, project: Project) -> tuple[float, str]:
+        for quote in project.quotes:
+            current_version = next(
+                (item for item in quote.versions if item.id == quote.current_version_id),
+                None,
+            )
+            if current_version is not None:
+                return float(current_version.total_amount), current_version.currency_code
+        if project.benchmark_summary is not None:
+            return (
+                float(project.benchmark_summary.quoted_amount),
+                project.benchmark_summary.currency_code,
+            )
+        return 0.0, project.quote_currency_code or "GBP"
+
+    def _to_dashboard_project_record(
+        self,
+        session: Session,
+        project: Project,
+        *,
+        selected_version: ForecastVersion | None,
+    ) -> DashboardProjectRecord:
+        client_id, client_name = self._resolve_client(project)
+        quote_total, currency_code = self._resolve_quote_total(project)
+        version_read = (
+            forecast_service.get_version(session, selected_version.id)
+            if selected_version is not None
+            else None
+        )
+        effective_quote_amount = version_read.total_amount if version_read is not None else quote_total
+        effective_probability = (
+            version_read.probability_percent
+            if version_read is not None
+            else 100.0
+            if project.status.value in BOOKED_STATUSES
+            else 0.0
+            if project.status.value == "lost"
+            else 100.0
+        )
+        discipline_lookup = {
+            item.discipline_id: (
+                item.discipline.code,
+                item.discipline.name,
+            )
+            for item in project.disciplines
+            if item.discipline_id is not None and item.discipline is not None
+        }
+        monthly_values = tuple(
+            DisciplineMonthRecord(
+                month=item.month,
+                discipline_id=discipline_lookup.get(
+                    item.discipline_id,
+                    ("unassigned", "Unassigned"),
+                )[0],
+                discipline_name=discipline_lookup.get(
+                    item.discipline_id,
+                    ("unassigned", "Unassigned"),
+                )[1],
+                gross_amount=item.amount,
+                weighted_amount=item.weighted_amount,
+                low_amount=item.low_amount or item.amount,
+                high_amount=item.high_amount or item.amount,
+                actual_amount=item.actual_amount or 0.0,
+                booked_amount=item.amount if project.status.value in BOOKED_STATUSES else 0.0,
+            )
+            for item in (version_read.discipline_monthly_rollups if version_read is not None else [])
+        )
+        benchmark = None
+        if project.benchmark_summary is not None:
+            benchmark = _benchmark(
+                quoted_amount=float(project.benchmark_summary.quoted_amount),
+                actual_amount=(
+                    float(project.benchmark_summary.actual_amount)
+                    if project.benchmark_summary.actual_amount is not None
+                    else None
+                ),
+                actuals_status=project.benchmark_summary.actuals_status.value,
+                actuals_as_of_date=(
+                    project.benchmark_summary.actuals_as_of_date.isoformat()
+                    if project.benchmark_summary.actuals_as_of_date is not None
+                    else None
+                ),
+                disciplines=[
+                    (
+                        (
+                            item.discipline.code
+                            if item.discipline is not None
+                            else item.discipline_id
+                        ),
+                        (
+                            item.discipline.name
+                            if item.discipline is not None
+                            else item.discipline_id
+                        ),
+                        float(item.quoted_amount),
+                        float(item.actual_amount or 0.0),
+                    )
+                    for item in project.benchmark_summary.discipline_summaries
+                ],
+            )
+        return DashboardProjectRecord(
+            id=project.id,
+            name=project.name,
+            client_id=client_id,
+            client_name=client_name,
+            currency_code=currency_code,
+            status=project.status.value,
+            quote_amount=round(float(effective_quote_amount), 2),
+            probability_percent=round(float(effective_probability), 2),
+            forecast_version_id=selected_version.id if selected_version is not None else None,
+            forecast_status=selected_version.status.value if selected_version is not None else None,
+            forecast_scenario_key=selected_version.scenario_key if selected_version is not None else None,
+            forecast_confidence_score=(
+                version_read.confidence_score if version_read is not None else None
+            ),
+            data_sufficiency_score=(
+                version_read.data_sufficiency_score if version_read is not None else None
+            ),
+            fallback_tier=version_read.fallback_tier if version_read is not None else None,
+            issues=tuple(version_read.issues if version_read is not None else ("No forecast version.",)),
+            outcomes=tuple(
+                OutcomeRecord(
+                    outcome_type=item.outcome_type.value,
+                    effective_at=item.effective_at.isoformat(),
+                )
+                for item in sorted(project.outcomes, key=lambda outcome: outcome.effective_at)
+            ),
+            disciplines=tuple(sorted({item.discipline_id for item in monthly_values})),
+            monthly_values=monthly_values,
+            benchmark=benchmark,
+        )
+
     def _build_summary_cards(
         self, projects: list[DashboardProjectRecord], filters: DashboardFilters
     ) -> list[DashboardSummaryCard]:
         pipeline_projects = [project for project in projects if project.status in {"bid", "awarded"}]
         pipeline_value = round(sum(project.quote_amount for project in pipeline_projects), 2)
+        booked_forecast = round(
+            sum(
+                item.booked_amount
+                for project in projects
+                for item in project.monthly_values
+                if self._month_in_window(item.month, filters)
+            ),
+            2,
+        )
         weighted_forecast = round(
             sum(
                 item.weighted_amount
@@ -592,6 +896,12 @@ class DashboardService:
                 detail=f"{filters.from_month} to {filters.to_month}",
             ),
             DashboardSummaryCard(
+                key="booked_forecast",
+                label="Booked Forecast",
+                value=self._format_currency(booked_forecast),
+                detail="Operational forecast from awarded and in-flight work",
+            ),
+            DashboardSummaryCard(
                 key="awarded_projects",
                 label="Awarded Projects",
                 value=str(awarded_count),
@@ -620,6 +930,7 @@ class DashboardService:
     def _build_sales_pipeline(
         self, projects: list[DashboardProjectRecord]
     ) -> SalesPipelineSection:
+        currency_code = self._currency_code(projects)
         stages: list[PipelineStageSummary] = []
         for status, label in STATUS_LABELS.items():
             stage_projects = [project for project in projects if project.status == status]
@@ -630,13 +941,15 @@ class DashboardService:
                     project_count=len(stage_projects),
                     quote_amount=round(sum(project.quote_amount for project in stage_projects), 2),
                     weighted_amount=round(sum(project.weighted_value for project in stage_projects), 2),
-                    currency_code="GBP",
+                    booked_amount=round(sum(project.booked_value for project in stage_projects), 2),
+                    currency_code=currency_code,
                 )
             )
         return SalesPipelineSection(
-            currency_code="GBP",
+            currency_code=currency_code,
             total_quote_amount=round(sum(project.quote_amount for project in projects), 2),
             total_weighted_amount=round(sum(project.weighted_value for project in projects), 2),
+            total_booked_amount=round(sum(project.booked_value for project in projects), 2),
             stages=stages,
         )
 
@@ -645,22 +958,42 @@ class DashboardService:
         projects: list[DashboardProjectRecord],
         filters: DashboardFilters,
     ) -> MonthlyRevenueForecastSection:
-        values_by_month: dict[str, dict[str, float]] = defaultdict(lambda: {"gross": 0.0, "weighted": 0.0})
+        values_by_month: dict[str, dict[str, float]] = defaultdict(
+            lambda: {
+                "gross": 0.0,
+                "weighted": 0.0,
+                "low": 0.0,
+                "high": 0.0,
+                "actual": 0.0,
+                "booked": 0.0,
+            }
+        )
         for project in projects:
             for item in project.monthly_values:
                 if not self._month_in_window(item.month, filters):
                     continue
                 values_by_month[item.month]["gross"] += item.gross_amount
                 values_by_month[item.month]["weighted"] += item.weighted_amount
+                values_by_month[item.month]["low"] += item.low_amount
+                values_by_month[item.month]["high"] += item.high_amount
+                values_by_month[item.month]["actual"] += item.actual_amount
+                values_by_month[item.month]["booked"] += item.booked_amount
         months = [
             RevenueMonthPoint(
                 month=month,
                 gross_amount=round(values["gross"], 2),
                 weighted_amount=round(values["weighted"], 2),
+                low_amount=round(values["low"], 2),
+                high_amount=round(values["high"], 2),
+                actual_amount=round(values["actual"], 2),
+                booked_amount=round(values["booked"], 2),
             )
             for month, values in sorted(values_by_month.items())
         ]
-        return MonthlyRevenueForecastSection(currency_code="GBP", months=months)
+        return MonthlyRevenueForecastSection(
+            currency_code=self._currency_code(projects),
+            months=months,
+        )
 
     def _build_awarded_lost_trend(
         self,
@@ -816,7 +1149,15 @@ class DashboardService:
         series = [
             DisciplineRevenueSeries(
                 discipline_id=discipline_id,
-                discipline_name=DISCIPLINE_LABELS.get(discipline_id, discipline_id.title()),
+                discipline_name=next(
+                    (
+                        next_item.discipline_name
+                        for project in projects
+                        for next_item in project.monthly_values
+                        if next_item.discipline_id == discipline_id
+                    ),
+                    DISCIPLINE_LABELS.get(discipline_id, discipline_id.title()),
+                ),
                 points=[
                     DisciplineTrendPoint(
                         month=month,
@@ -828,7 +1169,11 @@ class DashboardService:
             )
             for discipline_id in sorted(by_discipline, key=lambda item: DISCIPLINE_LABELS.get(item, item))
         ]
-        return DisciplineRevenueTrendsSection(currency_code="GBP", months=ordered_months, series=series)
+        return DisciplineRevenueTrendsSection(
+            currency_code=self._currency_code(projects),
+            months=ordered_months,
+            series=series,
+        )
 
     def _build_forecast_confidence(
         self, projects: list[DashboardProjectRecord]
@@ -932,10 +1277,15 @@ class DashboardService:
             {
                 "month": item.month,
                 "projectName": project.name,
-                "disciplineName": DISCIPLINE_LABELS.get(item.discipline_id, item.discipline_id.title()),
+                "disciplineName": item.discipline_name,
                 "grossAmount": round(item.gross_amount, 2),
                 "weightedAmount": round(item.weighted_amount, 2),
-                "allocationMethod": "schedule" if project.status != "lost" else "manual",
+                "lowAmount": round(item.low_amount, 2),
+                "highAmount": round(item.high_amount, 2),
+                "actualAmount": round(item.actual_amount, 2),
+                "bookedAmount": round(item.booked_amount, 2),
+                "scenarioKey": project.forecast_scenario_key or "base",
+                "forecastStatus": project.forecast_status,
             }
             for project in projects
             for item in sorted(project.monthly_values, key=lambda value: (value.month, value.discipline_id))
@@ -950,12 +1300,18 @@ class DashboardService:
                 DashboardDrilldownColumn(key="disciplineName", label="Discipline", kind="text"),
                 DashboardDrilldownColumn(key="grossAmount", label="Gross Amount", kind="currency"),
                 DashboardDrilldownColumn(key="weightedAmount", label="Weighted Amount", kind="currency"),
-                DashboardDrilldownColumn(key="allocationMethod", label="Allocation", kind="text"),
+                DashboardDrilldownColumn(key="bookedAmount", label="Booked Amount", kind="currency"),
+                DashboardDrilldownColumn(key="actualAmount", label="Actual Amount", kind="currency"),
+                DashboardDrilldownColumn(key="lowAmount", label="Low", kind="currency"),
+                DashboardDrilldownColumn(key="highAmount", label="High", kind="currency"),
+                DashboardDrilldownColumn(key="scenarioKey", label="Scenario", kind="text"),
             ],
             rows=rows,
             totals={
                 "grossAmount": round(sum(float(row["grossAmount"]) for row in rows), 2),
                 "weightedAmount": round(sum(float(row["weightedAmount"]) for row in rows), 2),
+                "bookedAmount": round(sum(float(row["bookedAmount"]) for row in rows), 2),
+                "actualAmount": round(sum(float(row["actualAmount"]) for row in rows), 2),
             },
         )
 
@@ -1085,7 +1441,7 @@ class DashboardService:
         rows = [
             {
                 "month": item.month,
-                "disciplineName": DISCIPLINE_LABELS.get(item.discipline_id, item.discipline_id.title()),
+                "disciplineName": item.discipline_name,
                 "projectName": project.name,
                 "grossAmount": round(item.gross_amount, 2),
                 "weightedAmount": round(item.weighted_amount, 2),
@@ -1125,6 +1481,10 @@ class DashboardService:
                 "openIssues": len(project.issues),
                 "confidenceScore": self._confidence_score(project),
                 "confidenceBand": self._confidence_band(self._confidence_score(project)).title(),
+                "dataSufficiencyScore": round(project.data_sufficiency_score or 0.0, 2),
+                "fallbackTier": project.fallback_tier,
+                "scenarioKey": project.forecast_scenario_key or "base",
+                "forecastStatus": project.forecast_status,
             }
             for project in sorted(projects, key=lambda item: (-self._confidence_score(item), item.name))
         ]
@@ -1140,6 +1500,13 @@ class DashboardService:
                 DashboardDrilldownColumn(key="openIssues", label="Open Issues", kind="number"),
                 DashboardDrilldownColumn(key="confidenceScore", label="Confidence Score", kind="number"),
                 DashboardDrilldownColumn(key="confidenceBand", label="Confidence Band", kind="text"),
+                DashboardDrilldownColumn(
+                    key="dataSufficiencyScore",
+                    label="Data Sufficiency",
+                    kind="number",
+                ),
+                DashboardDrilldownColumn(key="fallbackTier", label="Fallback Tier", kind="text"),
+                DashboardDrilldownColumn(key="scenarioKey", label="Scenario", kind="text"),
             ],
             rows=rows,
             totals={
@@ -1186,6 +1553,8 @@ class DashboardService:
         )
 
     def _confidence_score(self, project: DashboardProjectRecord) -> int:
+        if project.forecast_confidence_score is not None:
+            return max(0, min(round(project.forecast_confidence_score), 100))
         bucket_bonus = 25 if project.status in {"awarded", "active", "complete"} else 10 if project.status == "bid" else 0
         actuals_bonus = 15 if project.actuals_status == "complete" else 8 if project.actuals_status == "partial" else 0
         issue_bonus = 10 if len(project.issues) == 0 else 5 if len(project.issues) <= 2 else 0

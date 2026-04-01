@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import CurrentSubject, require_permissions
 from app.core.db import get_db_session
 from app.modules.forecasts.schemas import (
+    ForecastAccuracySummaryRead,
     ForecastDetailRead,
     ForecastLineAllocationsReplaceRequest,
     ForecastPolicySummary,
@@ -37,18 +38,18 @@ ForecastsLockSubject = Annotated[
 
 @router.get("/policy", response_model=ForecastPolicySummary)
 def get_forecast_policy(
+    session: DbSession,
     _subject: ForecastsReadSubject,
 ) -> ForecastPolicySummary:
-    return ForecastPolicySummary(
-        supported_methods=["schedule", "manual"],
-        supported_outcomes=["bid", "awarded", "lost"],
-        recalc_triggers=[
-            "quote_approved",
-            "allocation_updated",
-            "schedule_range_updated",
-            "project_outcome_updated",
-        ],
-    )
+    return forecast_service.get_policy(session)
+
+
+@router.get("/accuracy", response_model=ForecastAccuracySummaryRead)
+def get_forecast_accuracy_summary(
+    session: DbSession,
+    _subject: ForecastsReadSubject,
+) -> ForecastAccuracySummaryRead:
+    return forecast_service.get_accuracy_summary(session)
 
 
 @router.get("/projects/{project_id}", response_model=ForecastDetailRead)

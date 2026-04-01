@@ -17,7 +17,9 @@
     "dev:api": "npm run dev -w @quotes4/api",
     "dev:worker": "npm run dev -w @quotes4/worker",
     "db:migrate": "cd apps/api && alembic upgrade head",
-    "db:seed": "cd apps/api && python3 -m app.seed",
+    "db:seed": "cd apps/api && python3 -m app.seed --mode demo",
+    "db:seed:demo": "cd apps/api && python3 -m app.seed --mode demo",
+    "db:seed:baseline": "cd apps/api && python3 -m app.seed --mode baseline",
     "contracts:generate": "npm run generate -w @quotes4/contracts",
     "format:check": "prettier --check ."
   },

@@ -5,6 +5,8 @@ import { useState, useTransition } from "react";
 
 import { ApiClientError } from "@quotes4/contracts";
 
+import type { WorkspaceDataMode } from "@/lib/workspace-config";
+
 import { createBrowserSession } from "@/lib/api/auth";
 import { validateLoginCredentials } from "@/lib/forms/validation";
 
@@ -13,18 +15,30 @@ import { ErrorState } from "@/components/ui/error-state";
 import { SectionCard } from "@/components/ui/section-card";
 import { TextInput } from "@/components/forms/text-input";
 
-export function LoginForm() {
+export function LoginForm({
+  defaultEmail,
+  defaultPassword,
+  helpText,
+  workspaceLabel,
+  workspaceMode
+}: {
+  defaultEmail: string;
+  defaultPassword: string;
+  helpText: string;
+  workspaceLabel: string;
+  workspaceMode: WorkspaceDataMode;
+}) {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@quotes4.dev");
-  const [password, setPassword] = useState("quotes4-admin-password");
+  const [email, setEmail] = useState(defaultEmail);
+  const [password, setPassword] = useState(defaultPassword);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const validationError = validateLoginCredentials(email, password);
 
   return (
     <SectionCard
-      title="Login"
-      description="Use your Quotes4 account to access quotes, projects, forecasts, and historical comparisons."
+      title={`Sign in to ${workspaceLabel}`}
+      description="Use your Quotes4 account to access quotes, projects, forecasts, imports, and historical comparisons."
     >
       <form
         className="grid gap-4"
@@ -77,9 +91,14 @@ export function LoginForm() {
             value={password}
           />
         </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          The local demo account uses <code>admin@quotes4.dev</code> with password{" "}
-          <code>quotes4-admin-password</code>.
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            workspaceMode === "live"
+              ? "border-amber-200 bg-amber-50 text-amber-950"
+              : "border-slate-200 bg-slate-50 text-slate-600"
+          }`}
+        >
+          {helpText}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button disabled={Boolean(isPending || validationError)} type="submit" variant="primary">

@@ -25,6 +25,27 @@ function getMaxValue(values: number[]): number {
   return Math.max(...values, 1);
 }
 
+function getCoordinates(
+  values: number[],
+  width: number,
+  height: number,
+  paddingX: number,
+  paddingY: number,
+) {
+  const maxValue = getMaxValue(values);
+  const usableWidth = width - paddingX * 2;
+  const usableHeight = height - paddingY * 2;
+
+  return values.map((value, index) => {
+    const x =
+      values.length === 1
+        ? width / 2
+        : paddingX + (usableWidth / (values.length - 1)) * index;
+    const y = height - paddingY - (value / maxValue) * usableHeight;
+    return { x, y };
+  });
+}
+
 function getLinePoints(
   values: number[],
   width: number,
@@ -32,19 +53,8 @@ function getLinePoints(
   paddingX: number,
   paddingY: number,
 ): string {
-  const maxValue = getMaxValue(values);
-  const usableWidth = width - paddingX * 2;
-  const usableHeight = height - paddingY * 2;
-
-  return values
-    .map((value, index) => {
-      const x =
-        values.length === 1
-          ? width / 2
-          : paddingX + (usableWidth / (values.length - 1)) * index;
-      const y = height - paddingY - (value / maxValue) * usableHeight;
-      return `${x},${y}`;
-    })
+  return getCoordinates(values, width, height, paddingX, paddingY)
+    .map((point) => `${point.x},${point.y}`)
     .join(" ");
 }
 
@@ -112,6 +122,9 @@ export function PipelineChart({
                   Weighted {formatCurrency(stage.weightedAmount, currencyCode)}
                 </span>
                 <span>
+                  Booked {formatCurrency(stage.bookedAmount, currencyCode)}
+                </span>
+                <span>
                   Remaining{" "}
                   {formatCurrency(
                     Math.max(stage.quoteAmount - stage.weightedAmount, 0),
@@ -140,7 +153,16 @@ export function RevenueLineChart({
   const paddingY = 22;
   const grossValues = months.map((month) => month.grossAmount);
   const weightedValues = months.map((month) => month.weightedAmount);
-  const maxValue = getMaxValue([...grossValues, ...weightedValues]);
+  const lowValues = months.map((month) => month.lowAmount ?? month.grossAmount);
+  const highValues = months.map((month) => month.highAmount ?? month.grossAmount);
+  const actualValues = months.map((month) => month.actualAmount ?? 0);
+  const hasActuals = actualValues.some((value) => value > 0);
+  const maxValue = getMaxValue([
+    ...grossValues,
+    ...weightedValues,
+    ...highValues,
+    ...actualValues,
+  ]);
   const grossPoints = getLinePoints(grossValues, width, height, paddingX, paddingY);
   const weightedPoints = getLinePoints(
     weightedValues,
@@ -149,10 +171,21 @@ export function RevenueLineChart({
     paddingX,
     paddingY,
   );
+  const actualPoints = getLinePoints(actualValues, width, height, paddingX, paddingY);
+  const lowCoordinates = getCoordinates(lowValues, width, height, paddingX, paddingY);
+  const highCoordinates = getCoordinates(highValues, width, height, paddingX, paddingY);
+  const confidenceBandPoints = [
+    ...highCoordinates.map((point) => `${point.x},${point.y}`),
+    ...lowCoordinates.reverse().map((point) => `${point.x},${point.y}`),
+  ].join(" ");
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-sky-100" />
+          Expected range
+        </div>
         <div className="flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
           Gross forecast
@@ -161,6 +194,12 @@ export function RevenueLineChart({
           <span className="h-2.5 w-2.5 rounded-full bg-slate-900" />
           Weighted forecast
         </div>
+        {hasActuals ? (
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            Actuals posted
+          </div>
+        ) : null}
       </div>
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <svg
@@ -196,6 +235,11 @@ export function RevenueLineChart({
             );
           })}
 
+          <polygon
+            fill="#e0f2fe"
+            opacity="0.7"
+            points={confidenceBandPoints}
+          />
           <polyline
             fill="none"
             points={grossPoints}
@@ -212,6 +256,17 @@ export function RevenueLineChart({
             strokeLinecap="round"
             strokeWidth="3"
           />
+          {hasActuals ? (
+            <polyline
+              fill="none"
+              points={actualPoints}
+              stroke="#10b981"
+              strokeDasharray="6 4"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              strokeWidth="3"
+            />
+          ) : null}
 
           {months.map((month, index) => {
             const x =
@@ -227,11 +282,18 @@ export function RevenueLineChart({
               height -
               paddingY -
               (month.weightedAmount / maxValue) * (height - paddingY * 2);
+            const actualY =
+              height -
+              paddingY -
+              ((month.actualAmount ?? 0) / maxValue) * (height - paddingY * 2);
 
             return (
               <g key={month.month}>
                 <circle cx={x} cy={grossY} fill="#0ea5e9" r="4" />
                 <circle cx={x} cy={weightedY} fill="#0f172a" r="4" />
+                {(month.actualAmount ?? 0) > 0 ? (
+                  <circle cx={x} cy={actualY} fill="#10b981" r="4" />
+                ) : null}
               </g>
             );
           })}
@@ -244,6 +306,14 @@ export function RevenueLineChart({
               </p>
               <p>Gross {formatCurrency(month.grossAmount, currencyCode)}</p>
               <p>Weighted {formatCurrency(month.weightedAmount, currencyCode)}</p>
+              <p>
+                Range{" "}
+                {formatCurrency(month.lowAmount ?? month.grossAmount, currencyCode)} to{" "}
+                {formatCurrency(month.highAmount ?? month.grossAmount, currencyCode)}
+              </p>
+              {(month.actualAmount ?? 0) > 0 ? (
+                <p>Actual {formatCurrency(month.actualAmount ?? 0, currencyCode)}</p>
+              ) : null}
             </div>
           ))}
         </div>

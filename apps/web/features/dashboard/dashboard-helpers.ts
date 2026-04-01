@@ -27,6 +27,7 @@ export interface DashboardFilters {
   projectId: string | undefined;
   disciplineId: string | undefined;
   status: string | undefined;
+  scenarioKey: string | undefined;
 }
 
 const FILTER_ORDER: Array<keyof DashboardFilters> = [
@@ -36,11 +37,13 @@ const FILTER_ORDER: Array<keyof DashboardFilters> = [
   "projectId",
   "disciplineId",
   "status",
+  "scenarioKey",
 ];
 
 const SUMMARY_CARD_VIEW_MAP: Record<string, DashboardView> = {
   open_pipeline: "sales_pipeline",
   weighted_forecast: "monthly_forecast",
+  booked_forecast: "monthly_forecast",
   awarded_projects: "awarded_lost",
   lost_projects: "awarded_lost",
   benchmark_median_variance: "benchmark_overview",
@@ -89,6 +92,7 @@ export function getDefaultDashboardFilters(referenceDate = new Date()) {
   return {
     fromMonth: shiftMonth(referenceDate, -5),
     toMonth: shiftMonth(referenceDate, 6),
+    scenarioKey: "base",
   };
 }
 
@@ -112,6 +116,7 @@ export function parseDashboardFilters(
     projectId: normalizeOptionalValue(params.get("projectId")),
     disciplineId: normalizeOptionalValue(params.get("disciplineId")),
     status: normalizeOptionalValue(params.get("status")),
+    scenarioKey: normalizeOptionalValue(params.get("scenarioKey")) ?? defaults.scenarioKey,
   };
 }
 
@@ -140,6 +145,7 @@ export function toDashboardQueryOptions(
     ...(filters.projectId ? { projectId: filters.projectId } : {}),
     ...(filters.disciplineId ? { disciplineId: filters.disciplineId } : {}),
     ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.scenarioKey ? { scenarioKey: filters.scenarioKey } : {}),
   };
 }
 

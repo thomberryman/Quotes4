@@ -499,6 +499,7 @@ export interface DashboardAppliedFilters {
   projectId?: string | null;
   disciplineId?: string | null;
   status?: string | null;
+  scenarioKey?: string | null;
 }
 
 export interface DashboardDrilldownColumn {
@@ -520,6 +521,7 @@ export interface DashboardFilterOptions {
   projects: DashboardOption[];
   disciplines: DashboardOption[];
   statuses: DashboardOption[];
+  scenarios: DashboardOption[];
 }
 
 export interface DashboardOption {
@@ -677,11 +679,110 @@ export interface FinalizeUploadResponse {
   file: UploadedFileRead;
 }
 
+export interface ForecastAccuracyDisciplineRead {
+  disciplineId?: string | null;
+  disciplineCode?: string | null;
+  disciplineName?: string | null;
+  sampleCount: number;
+  forecastAmount: number;
+  actualAmount: number;
+  varianceAmount: number;
+  variancePct?: number | null;
+  meanAbsolutePercentageError?: number | null;
+}
+
+export interface ForecastAccuracyMetricsRead {
+  comparisonProjectCount: number;
+  resolvedProjectCount: number;
+  partialProjectCount: number;
+  monthlyCoverageProjectCount: number;
+  disciplineCoverageProjectCount: number;
+  meanAbsoluteError?: number | null;
+  meanAbsolutePercentageError?: number | null;
+  weightedAbsolutePercentageError?: number | null;
+  meanBiasAmount?: number | null;
+  meanBiasPercentage?: number | null;
+  withinTenPercentRate?: number | null;
+}
+
+export interface ForecastAccuracyMonthRead {
+  month: string;
+  projectCount: number;
+  forecastAmount: number;
+  actualAmount: number;
+  varianceAmount: number;
+  variancePct?: number | null;
+  absolutePercentageError?: number | null;
+}
+
+export interface ForecastAccuracyProjectComparisonRead {
+  projectId: string;
+  projectName: string;
+  projectStatus: string;
+  scenarioKey: string;
+  confidenceScore?: number | null;
+  actualsStatus: string;
+  actualSource: string;
+  forecastAmount: number;
+  actualAmount: number;
+  varianceAmount: number;
+  variancePct?: number | null;
+  absolutePercentageError?: number | null;
+}
+
+export interface ForecastAccuracyRecommendationRead {
+  key: string;
+  priority: string;
+  title: string;
+  rationale: string;
+}
+
+export interface ForecastAccuracySummaryRead {
+  generatedAt: string;
+  metrics: ForecastAccuracyMetricsRead;
+  forecastVsActual: ForecastAccuracyProjectComparisonRead[];
+  monthlyVariance: ForecastAccuracyMonthRead[];
+  disciplineVariance: ForecastAccuracyDisciplineRead[];
+  confidenceCalibration: ForecastConfidenceCalibrationRead[];
+  scenarioAccuracy: ForecastScenarioAccuracyRead[];
+  weaknesses: ForecastAccuracyWeaknessRead[];
+  recommendations: ForecastAccuracyRecommendationRead[];
+}
+
+export interface ForecastAccuracyWeaknessRead {
+  kind: string;
+  key: string;
+  label: string;
+  sampleCount: number;
+  meanAbsolutePercentageError?: number | null;
+  varianceAmount?: number | null;
+  detail: string;
+}
+
+export interface ForecastConfidenceCalibrationRead {
+  bucketKey: string;
+  label: string;
+  projectCount: number;
+  averageConfidenceScore: number;
+  averageAccuracyScore: number;
+  meanAbsolutePercentageError: number;
+  overconfidenceGap: number;
+  withinRangeRate: number;
+}
+
 export interface ForecastConfidenceSection {
   projectCount: number;
   averageScore: number;
   highConfidenceProjectCount: number;
   bands: ConfidenceBandSummary[];
+}
+
+export interface ForecastCurveProfileOption {
+  key: string;
+  label: string;
+  shapeKey: string;
+  description?: string | null;
+  defaultForDisciplines?: string[];
 }
 
 export interface ForecastDetailRead {
@@ -690,6 +791,7 @@ export interface ForecastDetailRead {
   currentVersionId?: string | null;
   versions: ForecastVersionSummaryRead[];
   currentVersion?: ForecastVersionRead | null;
+  sanityChecks?: ForecastSanityCheckRead[];
 }
 
 export interface ForecastDisciplineMonthlyRollupRead {
@@ -697,6 +799,16 @@ export interface ForecastDisciplineMonthlyRollupRead {
   month: string;
   amount: number;
   weightedAmount: number;
+  lowAmount?: number | null;
+  highAmount?: number | null;
+  actualAmount?: number | null;
+}
+
+export interface ForecastExplanationRead {
+  key: string;
+  label: string;
+  impact: string;
+  detail: string;
 }
 
 export interface ForecastLineAllocationsReplaceRequest {
@@ -723,6 +835,19 @@ export interface ForecastLineRead {
   disciplineId?: string | null;
   scheduleRangeId?: string | null;
   notes?: string | null;
+  forecastMethodKey?: string | null;
+  allocationProfileKey?: string | null;
+  sequencingTemplateKey?: string | null;
+  sequencingStageKey?: string | null;
+  overlapPercent?: number | null;
+  confidenceScore?: number | null;
+  dataSufficiencyScore?: number | null;
+  fallbackTier?: string | null;
+  actualsToDateAmount?: number | null;
+  remainingAmount?: number | null;
+  forecastInputs?: { [key: string]: unknown; } | null;
+  explanations: ForecastExplanationRead[];
+  sanityChecks?: ForecastSanityCheckRead[];
   issues: string[];
   allocations: ForecastMonthlyAllocationRead[];
 }
@@ -731,18 +856,28 @@ export interface ForecastMonthlyAllocationRead {
   month: string;
   amount: number;
   weightedAmount: number;
+  lowAmount?: number | null;
+  highAmount?: number | null;
+  actualAmount?: number | null;
+  allocationSource?: string | null;
+  sourceContext?: { [key: string]: unknown; } | null;
 }
 
 export interface ForecastPolicySummary {
   supportedMethods: string[];
   supportedOutcomes: string[];
   recalcTriggers: string[];
+  curveProfiles?: ForecastCurveProfileOption[];
+  sequencingTemplates?: ForecastSequenceTemplateOption[];
 }
 
 export interface ForecastProjectMonthlyRollupRead {
   month: string;
   amount: number;
   weightedAmount: number;
+  lowAmount?: number | null;
+  highAmount?: number | null;
+  actualAmount?: number | null;
 }
 
 export interface ForecastRecalculateResponse {
@@ -752,6 +887,43 @@ export interface ForecastRecalculateResponse {
   status: string;
   forecastVersionId?: string | null;
   message: string;
+}
+
+export interface ForecastSanityCheckRead {
+  key: string;
+  severity: string;
+  scope: string;
+  title: string;
+  detail: string;
+  recommendation?: string | null;
+  blocking?: boolean;
+  lineId?: string | null;
+  month?: string | null;
+}
+
+export interface ForecastScenarioAccuracyRead {
+  scenarioKey: string;
+  projectCount: number;
+  meanVarianceAmount: number;
+  meanAbsolutePercentageError: number;
+  meanBiasPercentage: number;
+  withinTenPercentRate: number;
+  closestToActualRate: number;
+}
+
+export interface ForecastSequenceTemplateOption {
+  key: string;
+  label: string;
+  projectFormatKeys?: string[];
+  stages?: ForecastSequenceTemplateStageOption[];
+}
+
+export interface ForecastSequenceTemplateStageOption {
+  disciplineCode: string;
+  stageKey: string;
+  startPct: number;
+  endPct: number;
+  overlapPct?: number | null;
 }
 
 export interface ForecastVersionCreateRequest {
@@ -772,6 +944,14 @@ export interface ForecastVersionRead {
   probabilityPercent: number;
   totalAmount: number;
   weightedTotalAmount: number;
+  scenarioKey?: string;
+  engineSource?: string;
+  predictionRunId?: string | null;
+  predictionScenarioKey?: string | null;
+  confidenceScore?: number | null;
+  dataSufficiencyScore?: number | null;
+  fallbackTier?: string | null;
+  changeSummary?: { [key: string]: unknown; } | null;
   sourceQuoteVersionId?: string | null;
   isSourceQuoteCurrent: boolean;
   createdAt: string;
@@ -779,6 +959,8 @@ export interface ForecastVersionRead {
   notesText?: string | null;
   revisionReason?: string | null;
   parentVersionId?: string | null;
+  explanationSummary?: { [key: string]: unknown; } | null;
+  sanityChecks?: ForecastSanityCheckRead[];
   issues: string[];
   lines: ForecastLineRead[];
   disciplineMonthlyRollups: ForecastDisciplineMonthlyRollupRead[];
@@ -795,6 +977,14 @@ export interface ForecastVersionSummaryRead {
   probabilityPercent: number;
   totalAmount: number;
   weightedTotalAmount: number;
+  scenarioKey?: string;
+  engineSource?: string;
+  predictionRunId?: string | null;
+  predictionScenarioKey?: string | null;
+  confidenceScore?: number | null;
+  dataSufficiencyScore?: number | null;
+  fallbackTier?: string | null;
+  changeSummary?: { [key: string]: unknown; } | null;
   sourceQuoteVersionId?: string | null;
   isSourceQuoteCurrent: boolean;
   createdAt: string;
@@ -993,6 +1183,7 @@ export interface PipelineStageSummary {
   projectCount: number;
   quoteAmount: number;
   weightedAmount: number;
+  bookedAmount: number;
   currencyCode: string;
 }
 
@@ -1882,6 +2073,10 @@ export interface RevenueMonthPoint {
   month: string;
   grossAmount: number;
   weightedAmount: number;
+  lowAmount?: number | null;
+  highAmount?: number | null;
+  actualAmount?: number | null;
+  bookedAmount?: number | null;
 }
 
 export interface RiskSignal {
@@ -1903,6 +2098,7 @@ export interface SalesPipelineSection {
   currencyCode: string;
   totalQuoteAmount: number;
   totalWeightedAmount: number;
+  totalBookedAmount: number;
   stages: PipelineStageSummary[];
 }
 

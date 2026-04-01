@@ -73,6 +73,10 @@ function normalizeSections(
   }));
 }
 
+function stringFromNumericContext(value: unknown): string {
+  return typeof value === "number" ? String(value) : "";
+}
+
 export function QuoteBuilderWorkspace({
   projectId,
   projectName,
@@ -163,13 +167,19 @@ export function QuoteBuilderWorkspace({
     setSourceDocumentDate(versionQuery.data.sourceDocumentDate ?? "");
     setClientFacingNotes(versionQuery.data.clientFacingNotes ?? "");
     setInternalNotes(versionQuery.data.internalNotes ?? "");
-    setDiscountPercent(String(versionQuery.data.pricingContext?.discountPercent ?? ""));
-    setMarginPercent(String(versionQuery.data.pricingContext?.marginPercent ?? ""));
+    setDiscountPercent(
+      stringFromNumericContext(versionQuery.data.pricingContext?.discountPercent),
+    );
+    setMarginPercent(
+      stringFromNumericContext(versionQuery.data.pricingContext?.marginPercent),
+    );
     setThirdPartyCostPercent(
-      String(versionQuery.data.pricingContext?.thirdPartyCostPercent ?? ""),
+      stringFromNumericContext(
+        versionQuery.data.pricingContext?.thirdPartyCostPercent,
+      ),
     );
     setReviewCycleCount(
-      String(versionQuery.data.pricingContext?.reviewCycleCount ?? ""),
+      stringFromNumericContext(versionQuery.data.pricingContext?.reviewCycleCount),
     );
     setExternalVendorUsage(
       versionQuery.data.pricingContext?.externalVendorUsage ? "yes" : "no",

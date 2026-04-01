@@ -94,7 +94,7 @@ function DashboardFiltersBar({
   return (
     <section className="sticky top-0 z-20 rounded-xl border border-slate-200 bg-white/95 px-4 py-4 shadow-sm backdrop-blur">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="grid flex-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+        <div className="grid flex-1 gap-3 md:grid-cols-2 xl:grid-cols-7">
           <label className="grid gap-1.5">
             <span className="text-sm font-medium text-slate-700">From month</span>
             <input
@@ -191,6 +191,24 @@ function DashboardFiltersBar({
               <option key={option.id} value={option.id}>
                 {option.label}
               </option>
+              ))}
+          </SelectField>
+
+          <SelectField
+            data-testid="dashboard-filter-scenarioKey"
+            label="Scenario"
+            onChange={(event) =>
+              onFilterChange(
+                "scenarioKey",
+                event.currentTarget.value || undefined,
+              )
+            }
+            value={filters.scenarioKey ?? "base"}
+          >
+            {(options?.scenarios ?? []).map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
             ))}
           </SelectField>
         </div>
@@ -279,6 +297,7 @@ export function OperationalDashboardPage() {
       projectId: undefined,
       disciplineId: undefined,
       status: undefined,
+      scenarioKey: "base",
     });
   }
 
@@ -305,6 +324,7 @@ export function OperationalDashboardPage() {
             {filters.projectId ? ` · Project filter applied` : ""}
             {filters.disciplineId ? ` · Discipline filter applied` : ""}
             {filters.status ? ` · Status ${filters.status}` : ""}
+            {filters.scenarioKey ? ` · Scenario ${filters.scenarioKey}` : ""}
           </p>
           <p>Updated {formatDateTime(dashboard.generatedAt)}</p>
         </div>
@@ -370,7 +390,7 @@ export function OperationalDashboardPage() {
               testId="dashboard-open-sales_pipeline"
               title="Sales Pipeline"
             >
-              <div className="grid gap-4 border-b border-slate-200 pb-4 md:grid-cols-2">
+              <div className="grid gap-4 border-b border-slate-200 pb-4 md:grid-cols-3">
                 <SummaryStat
                   label="Total quote amount"
                   value={formatCurrency(
@@ -382,6 +402,13 @@ export function OperationalDashboardPage() {
                   label="Total weighted amount"
                   value={formatCurrency(
                     dashboard.salesPipeline.totalWeightedAmount,
+                    dashboard.salesPipeline.currencyCode,
+                  )}
+                />
+                <SummaryStat
+                  label="Booked operational amount"
+                  value={formatCurrency(
+                    dashboard.salesPipeline.totalBookedAmount,
                     dashboard.salesPipeline.currencyCode,
                   )}
                 />

@@ -104,6 +104,7 @@ export interface DashboardQueryOptions {
   projectId?: string;
   disciplineId?: string;
   status?: string;
+  scenarioKey?: string;
 }
 
 export interface AuditEventsQueryOptions {
@@ -270,6 +271,7 @@ export function createApiClient(config: ApiClientConfig) {
       projectId: options?.projectId,
       disciplineId: options?.disciplineId,
       status: options?.status,
+      scenarioKey: options?.scenarioKey,
     };
   }
 

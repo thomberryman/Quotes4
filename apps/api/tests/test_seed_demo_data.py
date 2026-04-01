@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from app.core.config import get_settings
+from app.core.db import get_engine, get_session_factory, reset_db_state
 from app.models import (
+    Base,
     CetaImport,
     Company,
     CompanyClassification,
@@ -16,6 +19,7 @@ from app.models import (
     Quote,
     QuoteVersion,
     ReferenceTermAlias,
+    User,
 )
 from app.models.enums import (
     BenchmarkActualsStatus,
@@ -26,6 +30,7 @@ from app.models.enums import (
     QuoteVersionStatus,
 )
 from app.modules.actuals_imports.service import actuals_import_service
+from app.seed import run_seed
 
 
 def test_demo_seed_populates_counterparties_contacts_projects_and_quotes(db_session) -> None:
@@ -137,3 +142,25 @@ def test_demo_seed_populates_forecasts_actuals_imports_and_variance_examples(
     red_room_rows = actuals_import_service.list_rows(db_session, red_room_batch.id).items
     red_room_queues = {row.review_queue for row in red_room_rows}
     assert {"ready", "ambiguous", "blocking"}.issubset(red_room_queues)
+
+
+def test_baseline_seed_skips_demo_records(tmp_path, monkeypatch) -> None:
+    database_url = f"sqlite:///{tmp_path / 'quotes4_baseline_seed.sqlite3'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    get_settings.cache_clear()
+    reset_db_state()
+
+    try:
+        Base.metadata.create_all(bind=get_engine())
+        run_seed(seed_mode="baseline")
+
+        with get_session_factory()() as session:
+            assert session.scalar(select(Project.id)) is None
+            assert session.scalar(select(ForecastVersion.id)) is None
+            assert session.scalar(select(CetaImport.id)) is None
+            assert session.scalar(select(ProjectExternalReference.id)) is None
+            assert session.scalar(select(User.id)) is not None
+            assert session.scalar(select(ReferenceTermAlias.id)) is not None
+    finally:
+        get_settings.cache_clear()
+        reset_db_state()

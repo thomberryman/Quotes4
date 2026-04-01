@@ -749,6 +749,10 @@ class ActualsImportService:
                 "withdrawnActualCount": withdrawn_actual_count,
             },
         )
+        from app.modules.forecasts.service import forecast_service
+
+        for project_id in sorted(affected_project_ids):
+            forecast_service.recalculate_project(session, project_id, actor_id=actor_id)
 
         job_service.enqueue(
             session,

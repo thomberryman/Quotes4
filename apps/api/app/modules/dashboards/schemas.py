@@ -17,6 +17,7 @@ class DashboardAppliedFilters(BaseSchema):
     project_id: str | None = None
     discipline_id: str | None = None
     status: str | None = None
+    scenario_key: str | None = None
 
 
 class DashboardFilterOptions(BaseSchema):
@@ -24,6 +25,7 @@ class DashboardFilterOptions(BaseSchema):
     projects: list[DashboardOption]
     disciplines: list[DashboardOption]
     statuses: list[DashboardOption]
+    scenarios: list[DashboardOption]
 
 
 class DashboardSummaryCard(BaseSchema):
@@ -39,6 +41,7 @@ class PipelineStageSummary(BaseSchema):
     project_count: int
     quote_amount: float
     weighted_amount: float
+    booked_amount: float
     currency_code: str
 
 
@@ -46,6 +49,7 @@ class SalesPipelineSection(BaseSchema):
     currency_code: str
     total_quote_amount: float
     total_weighted_amount: float
+    total_booked_amount: float
     stages: list[PipelineStageSummary]
 
 
@@ -53,6 +57,10 @@ class RevenueMonthPoint(BaseSchema):
     month: str
     gross_amount: float
     weighted_amount: float
+    low_amount: float | None = None
+    high_amount: float | None = None
+    actual_amount: float | None = None
+    booked_amount: float | None = None
 
 
 class MonthlyRevenueForecastSection(BaseSchema):

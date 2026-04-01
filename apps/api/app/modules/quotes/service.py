@@ -438,6 +438,9 @@ class QuotesService:
             project_id=quote.project_id,
             summary=f"Issued quote version v{version.version_number}.",
         )
+        from app.modules.forecasts.service import forecast_service
+
+        forecast_service.recalculate_project(session, quote.project_id, actor_id=actor_id)
         return self._serialize_version(session, version)
 
     def _replace_sections(

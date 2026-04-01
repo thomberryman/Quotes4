@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/features/auth/login-form";
 import { SectionCard } from "@/components/ui/section-card";
 import { ACCESS_TOKEN_COOKIE_NAME } from "@/lib/api/access-token";
+import { workspaceConfig } from "@/lib/workspace-config";
 
 export default async function LoginPage() {
   const cookieStore = await cookies();
@@ -15,8 +16,8 @@ export default async function LoginPage() {
     <main className="mx-auto flex min-h-screen max-w-5xl items-center px-4 py-10 lg:px-6">
       <div className="grid w-full gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <SectionCard
-          description="Quotes4 keeps quotes, forecasting, imports, and operational history in one shared business system."
-          title="Post production quoting and forecasting"
+          description={workspaceConfig.productDescription}
+          title={workspaceConfig.appDisplayName}
         >
           <div className="grid gap-4">
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
@@ -36,19 +37,37 @@ export default async function LoginPage() {
                 </li>
               </ul>
             </div>
-            <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-4">
-              <p className="text-sm font-semibold text-sky-900">
-                Operator notes
+            <div
+              className={`rounded-lg border px-4 py-4 ${
+                workspaceConfig.dataMode === "live"
+                  ? "border-amber-200 bg-amber-50"
+                  : "border-sky-200 bg-sky-50"
+              }`}
+            >
+              <p
+                className={`text-sm font-semibold ${
+                  workspaceConfig.dataMode === "live" ? "text-amber-950" : "text-sky-900"
+                }`}
+              >
+                {workspaceConfig.operatorNoticeTitle}
               </p>
-              <p className="mt-1 text-sm text-sky-800">
-                Demo data includes seeded quotes, imports, forecasts, and
-                benchmark summaries so the full operational workflow can be
-                reviewed end to end.
+              <p
+                className={`mt-1 text-sm ${
+                  workspaceConfig.dataMode === "live" ? "text-amber-900" : "text-sky-800"
+                }`}
+              >
+                {workspaceConfig.operatorNotice}
               </p>
             </div>
           </div>
         </SectionCard>
-        <LoginForm />
+        <LoginForm
+          defaultEmail={workspaceConfig.loginDefaults.email}
+          defaultPassword={workspaceConfig.loginDefaults.password}
+          helpText={workspaceConfig.loginHelpText}
+          workspaceLabel={workspaceConfig.workspaceLabel}
+          workspaceMode={workspaceConfig.dataMode}
+        />
       </div>
     </main>
   );

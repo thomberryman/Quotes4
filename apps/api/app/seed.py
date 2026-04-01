@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import os
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
@@ -68,12 +69,17 @@ from app.modules.actuals_imports.schemas import (
     WorkerActualsImportRow,
 )
 from app.modules.actuals_imports.service import actuals_import_service
+from app.modules.forecasts.engine import DEFAULT_CURVE_PROFILES, DEFAULT_SEQUENCE_TEMPLATES
 from app.modules.forecasts.schemas import (
     ForecastLineAllocationsReplaceRequest,
     ForecastLineMonthAllocationWrite,
     ForecastVersionCreateRequest,
 )
 from app.modules.forecasts.service import forecast_service
+
+SEED_MODE_DEMO = "demo"
+SEED_MODE_BASELINE = "baseline"
+VALID_SEED_MODES = frozenset({SEED_MODE_DEMO, SEED_MODE_BASELINE})
 
 
 def _utc(
@@ -91,6 +97,14 @@ def _normalize_text(value: str | None) -> str | None:
         return None
     normalized = " ".join(value.strip().lower().split())
     return normalized or None
+
+
+def _resolve_seed_mode(seed_mode: str | None = None) -> str:
+    normalized = (seed_mode or os.getenv("SEED_MODE", SEED_MODE_DEMO)).strip().lower()
+    if normalized not in VALID_SEED_MODES:
+        valid_modes = ", ".join(sorted(VALID_SEED_MODES))
+        raise RuntimeError(f"Unsupported seed mode '{normalized}'. Expected one of: {valid_modes}.")
+    return normalized
 
 
 def _line_amount(line_spec: dict[str, object]) -> float:
@@ -216,6 +230,54 @@ REFERENCE_DATA_SEEDS = {
         ("audio_services", "Audio Services", 30),
         ("delivery_services", "Delivery Services", 40),
         ("pass_through", "Pass-Through Revenue", 50),
+    ],
+    "forecast_curve_profile": [
+        {
+            "key": key,
+            "label": key.replace("_", " ").title(),
+            "sort_order": index * 10,
+            "metadata": {
+                "shapeKey": str(definition.get("shapeKey", key)),
+                "description": definition.get("description"),
+                "defaultDisciplineCodes": definition.get("defaultDisciplineCodes", []),
+                **{
+                    config_key: definition[config_key]
+                    for config_key in (
+                        "startMultiplier",
+                        "endMultiplier",
+                        "baseMultiplier",
+                        "peakMultiplier",
+                        "pulseMultiplier",
+                        "pulseSharpness",
+                        "minimumMultiplier",
+                        "flatMultiplier",
+                    )
+                    if definition.get(config_key) is not None
+                },
+            },
+        }
+        for index, (key, definition) in enumerate(DEFAULT_CURVE_PROFILES.items(), start=1)
+    ],
+    "forecast_sequence_template": [
+        {
+            "key": key,
+            "label": key.replace("_", " ").title(),
+            "sort_order": index * 10,
+            "metadata": {
+                "projectFormatKeys": [] if key == "default" else [key],
+                "stages": [
+                    {
+                        "disciplineCode": discipline_code,
+                        "stageKey": str(stage["stage"]),
+                        "startPct": float(stage["start_pct"]),
+                        "endPct": float(stage["end_pct"]),
+                        "overlapPct": float(stage["overlap_pct"]),
+                    }
+                    for discipline_code, stage in template.items()
+                ],
+            },
+        }
+        for index, (key, template) in enumerate(DEFAULT_SEQUENCE_TEMPLATES.items(), start=1)
     ],
 }
 
@@ -2711,7 +2773,15 @@ def _seed_loss_reasons(session: Session) -> None:
 
 def _seed_reference_data(session: Session) -> None:
     for category, values in REFERENCE_DATA_SEEDS.items():
-        for key, label, sort_order in values:
+        for value in values:
+            if isinstance(value, dict):
+                key = str(value["key"])
+                label = str(value["label"])
+                sort_order = int(value["sort_order"])
+                metadata = value.get("metadata")
+            else:
+                key, label, sort_order = value
+                metadata = None
             reference = session.scalar(
                 select(ReferenceDataValue).where(
                     ReferenceDataValue.category == category,
@@ -2726,12 +2796,14 @@ def _seed_reference_data(session: Session) -> None:
                         label=label,
                         sort_order=sort_order,
                         is_active=True,
+                        metadata_json=metadata if isinstance(metadata, dict) else None,
                     )
                 )
             else:
                 reference.label = label
                 reference.sort_order = sort_order
                 reference.is_active = True
+                reference.metadata_json = metadata if isinstance(metadata, dict) else None
 
 
 def _seed_companies(session: Session) -> None:
@@ -2906,10 +2978,16 @@ def _seed_reference_aliases(session: Session, *, actor_id: str) -> None:
     session.flush()
 
 
-def _seed_admin_user(session: Session, roles: dict[str, Role]) -> User:
+def _seed_admin_user(session: Session, roles: dict[str, Role], *, seed_mode: str) -> User:
     legacy_email = normalize_email("admin@quotes4.local")
     email = normalize_email(os.getenv("DEV_ADMIN_EMAIL", "admin@quotes4.dev"))
     password = os.getenv("DEV_ADMIN_PASSWORD", "quotes4-admin-password")
+    first_name = os.getenv(
+        "DEV_ADMIN_FIRST_NAME",
+        "Demo" if seed_mode == SEED_MODE_DEMO else "System",
+    )
+    last_name = os.getenv("DEV_ADMIN_LAST_NAME", "Admin")
+    display_name = os.getenv("DEV_ADMIN_DISPLAY_NAME", f"{first_name} {last_name}".strip())
     user = session.scalar(select(User).where(User.normalized_email == email))
     if user is None and email != legacy_email:
         user = session.scalar(select(User).where(User.normalized_email == legacy_email))
@@ -2920,9 +2998,9 @@ def _seed_admin_user(session: Session, roles: dict[str, Role]) -> User:
         user = User(
             email=email,
             normalized_email=email,
-            first_name="Demo",
-            last_name="Admin",
-            display_name="Demo Admin",
+            first_name=first_name,
+            last_name=last_name,
+            display_name=display_name,
             job_title="System Administrator",
             password_hash=password_hash,
             is_active=True,
@@ -2934,9 +3012,11 @@ def _seed_admin_user(session: Session, roles: dict[str, Role]) -> User:
     else:
         user.email = email
         user.normalized_email = email
+        user.first_name = first_name
+        user.last_name = last_name
         user.password_hash = password_hash
         user.is_active = True
-        user.display_name = "Demo Admin"
+        user.display_name = display_name
         user.job_title = "System Administrator"
 
     existing_role_ids = {
@@ -3624,7 +3704,8 @@ def _seed_demo_actuals_imports(
             )
 
 
-def run_seed() -> None:
+def run_seed(*, seed_mode: str | None = None) -> None:
+    resolved_seed_mode = _resolve_seed_mode(seed_mode)
     session_factory = get_session_factory()
     with session_factory() as session:
         roles = _seed_roles_and_permissions(session)
@@ -3635,18 +3716,38 @@ def run_seed() -> None:
         _seed_companies(session)
         _seed_contacts(session)
         _seed_company_contacts(session)
-        admin_user = _seed_admin_user(session, roles)
+        admin_user = _seed_admin_user(session, roles, seed_mode=resolved_seed_mode)
         _seed_reference_aliases(session, actor_id=admin_user.id)
-        _seed_demo_projects(session, actor_id=admin_user.id)
-        _seed_demo_forecasts(session, actor_id=admin_user.id)
-        _seed_demo_actuals_imports(session, actor_id=admin_user.id)
+        if resolved_seed_mode == SEED_MODE_DEMO:
+            _seed_demo_projects(session, actor_id=admin_user.id)
+            _seed_demo_forecasts(session, actor_id=admin_user.id)
+            _seed_demo_actuals_imports(session, actor_id=admin_user.id)
         session.commit()
 
+    if resolved_seed_mode == SEED_MODE_DEMO:
+        print(
+            "Seed complete (demo): reference data, counterparties, contacts, demo projects, "
+            "quote history, forecasts, actuals imports, and benchmark summaries"
+        )
+        return
+
     print(
-        "Seed complete: reference data, counterparties, contacts, demo projects, "
-        "quote history, forecasts, actuals imports, and benchmark summaries"
+        "Seed complete (baseline): reference data, counterparties, contacts, aliases, "
+        "and admin access only"
     )
 
 
+def _build_cli_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Seed the Quotes4 database.")
+    parser.add_argument(
+        "--mode",
+        choices=sorted(VALID_SEED_MODES),
+        default=None,
+        help="Seed baseline operational data only, or include the full demo dataset.",
+    )
+    return parser
+
+
 if __name__ == "__main__":
-    run_seed()
+    args = _build_cli_parser().parse_args()
+    run_seed(seed_mode=args.mode)

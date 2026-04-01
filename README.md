@@ -29,12 +29,38 @@ Quotes4 is a multi-user quoting, forecasting, and actuals analysis platform for 
 
 To run the entire stack in containers instead, use `docker compose up --build`.
 
+`.env.example` is now a demo-oriented local configuration: it points at a demo database, uses demo cookie names, and seeds the full sample dataset.
+
+## Demo And Live Side By Side
+
+Use the checked-in Compose env files to keep a seeded demo stack and a live-import stack running at the same time on one machine.
+
+### Demo Stack
+
+1. Start the services with `docker compose --env-file compose.demo.env -p quotes4-demo up -d --build`.
+2. Run migrations with `docker compose --env-file compose.demo.env -p quotes4-demo run --rm api alembic upgrade head`.
+3. Seed demo data with `docker compose --env-file compose.demo.env -p quotes4-demo run --rm api python -m app.seed --mode demo`.
+4. Open the app at [http://localhost:3000](http://localhost:3000).
+
+### Live Import Stack
+
+1. Start the services with `docker compose --env-file compose.live.env -p quotes4-live up -d --build`.
+2. Run migrations with `docker compose --env-file compose.live.env -p quotes4-live run --rm api alembic upgrade head`.
+3. Seed baseline access and reference data with `docker compose --env-file compose.live.env -p quotes4-live run --rm api python -m app.seed --mode baseline`.
+4. Open the app at [http://localhost:3010](http://localhost:3010).
+
+The two stacks use separate PostgreSQL containers, storage namespaces, host ports, and auth cookie names, so you can stay logged into both at once on `localhost`.
+
+If you prefer running outside Docker, use `npm run db:seed:demo` for the demo database and `npm run db:seed:baseline` for the live-import database after switching `DATABASE_URL` and the related environment variables.
+
 ## Commands
 
 - Build: `npm run build`
 - Install Python deps: `npm run deps:python`
 - Run DB migrations: `npm run db:migrate`
 - Seed DB: `npm run db:seed`
+- Seed demo DB explicitly: `npm run db:seed:demo`
+- Seed baseline/live DB explicitly: `npm run db:seed:baseline`
 - Generate contracts: `npm run contracts:generate`
 - Lint: `npm run lint`
 - Typecheck: `npm run typecheck`

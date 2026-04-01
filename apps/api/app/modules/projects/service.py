@@ -187,6 +187,15 @@ class ProjectsService:
             before=before,
             after=self._serialize_project(session, project).model_dump(mode="json"),
         )
+        if {
+            "status",
+            "pipeline_stage_key",
+            "start_date",
+            "end_date",
+        } & set(payload.model_fields_set):
+            from app.modules.forecasts.service import forecast_service
+
+            forecast_service.recalculate_project(session, project.id, actor_id=actor_id)
         return self._serialize_project(session, project)
 
     def put_metadata(
@@ -234,6 +243,9 @@ class ProjectsService:
             project_id=project.id,
             summary=f"Replaced metadata for {project.name}.",
         )
+        from app.modules.forecasts.service import forecast_service
+
+        forecast_service.recalculate_project(session, project.id, actor_id=actor_id)
         return self._serialize_project(session, project)
 
     def replace_parties(
@@ -341,6 +353,9 @@ class ProjectsService:
             project_id=project.id,
             summary=f"Replaced project disciplines for {project.name}.",
         )
+        from app.modules.forecasts.service import forecast_service
+
+        forecast_service.recalculate_project(session, project.id, actor_id=actor_id)
         return self._serialize_project(session, project)
 
     def replace_schedule_ranges(
@@ -380,6 +395,9 @@ class ProjectsService:
             project_id=project.id,
             summary=f"Replaced project schedule ranges for {project.name}.",
         )
+        from app.modules.forecasts.service import forecast_service
+
+        forecast_service.recalculate_project(session, project.id, actor_id=actor_id)
         return self._serialize_project(session, project)
 
     def add_outcome(

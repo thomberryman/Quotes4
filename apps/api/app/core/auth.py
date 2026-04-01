@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from secrets import compare_digest
 from typing import Annotated
 
-from fastapi import Cookie, Depends, Request
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.config import get_settings
 from app.core.db import get_db_session
 from app.core.errors import ApiProblemException
 from app.core.security import decode_access_token
@@ -17,7 +18,6 @@ from app.models import Permission, Role, RolePermission, User, UserRoleAssignmen
 bearer_scheme = HTTPBearer(auto_error=False)
 BearerCredentials = Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)]
 DbSession = Annotated[Session, Depends(get_db_session)]
-CSRF_COOKIE_NAME = "quotes4_csrf_token"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 SAFE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
 
@@ -87,9 +87,10 @@ def get_current_subject(
     credentials: BearerCredentials,
     session: DbSession,
     request: Request,
-    cookie_access_token: str | None = Cookie(default=None, alias="quotes4_access_token"),
-    cookie_csrf_token: str | None = Cookie(default=None, alias=CSRF_COOKIE_NAME),
 ) -> CurrentSubject:
+    settings = get_settings()
+    cookie_access_token = request.cookies.get(settings.auth_access_cookie_name)
+    cookie_csrf_token = request.cookies.get(settings.auth_csrf_cookie_name)
     token = None
     using_cookie_auth = False
     if credentials is not None and credentials.scheme.lower() == "bearer":

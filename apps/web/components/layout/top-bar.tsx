@@ -1,12 +1,22 @@
+import { cn } from "@/lib/classnames";
+
+import type { WorkspaceDataMode } from "@/lib/workspace-config";
+
 import { LogoutButton } from "./logout-button";
 
 export function TopBar({
+  appDisplayName,
   userName,
   userEmail,
+  workspaceLabel,
+  workspaceMode,
   onOpenNav
 }: {
+  appDisplayName: string;
   userName: string;
   userEmail: string;
+  workspaceLabel: string;
+  workspaceMode: WorkspaceDataMode;
   onOpenNav?: () => void;
 }) {
   return (
@@ -22,7 +32,19 @@ export function TopBar({
           </button>
         ) : null}
         <div>
-          <p className="text-sm font-semibold text-slate-900">Quotes4</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-slate-900">{appDisplayName}</p>
+            <span
+              className={cn(
+                "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
+                workspaceMode === "live"
+                  ? "border-amber-300 bg-amber-50 text-amber-900"
+                  : "border-sky-200 bg-sky-50 text-sky-900",
+              )}
+            >
+              {workspaceLabel}
+            </span>
+          </div>
           <p className="text-xs text-slate-500">Operational quoting and forecasting workspace</p>
         </div>
       </div>

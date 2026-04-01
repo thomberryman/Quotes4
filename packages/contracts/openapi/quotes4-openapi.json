@@ -12,54 +12,15 @@
         ],
         "summary": "Create Invitation",
         "operationId": "create_invitation_api_v1_auth_invitations_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/InvitationRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -82,7 +43,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/auth/invitations/accept": {
@@ -134,14 +100,14 @@
         "summary": "Create Session",
         "operationId": "create_session_api_v1_auth_session_post",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LoginRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -172,40 +138,6 @@
         ],
         "summary": "Destroy Session",
         "operationId": "destroy_session_api_v1_auth_session_delete",
-        "parameters": [
-          {
-            "name": "quotes4_refresh_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Refresh Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -213,16 +145,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LogoutResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -237,49 +159,15 @@
         ],
         "summary": "Refresh Session",
         "operationId": "refresh_session_api_v1_auth_session_refresh_post",
-        "parameters": [
-          {
-            "name": "quotes4_refresh_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Refresh Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RefreshSessionRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -312,45 +200,6 @@
         ],
         "summary": "Get Current User",
         "operationId": "get_current_user_api_v1_auth_me_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -361,18 +210,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/users/me": {
@@ -382,45 +226,6 @@
         ],
         "summary": "Get Me",
         "operationId": "get_me_api_v1_users_me_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -431,18 +236,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/users": {
@@ -452,45 +252,6 @@
         ],
         "summary": "List Users",
         "operationId": "list_users_api_v1_users_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -501,18 +262,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -520,54 +276,15 @@
         ],
         "summary": "Create User",
         "operationId": "create_user_api_v1_users_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UserCreateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -590,7 +307,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/users/{user_id}": {
@@ -613,38 +335,6 @@
             "schema": {
               "type": "string",
               "title": "User Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -690,38 +380,6 @@
             "schema": {
               "type": "string",
               "title": "User Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -780,38 +438,6 @@
               "type": "string",
               "title": "User Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -855,45 +481,6 @@
         ],
         "summary": "List Roles",
         "operationId": "list_roles_api_v1_rbac_roles_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -904,18 +491,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/rbac/permissions": {
@@ -925,45 +507,6 @@
         ],
         "summary": "List Permissions",
         "operationId": "list_permissions_api_v1_rbac_permissions_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -974,18 +517,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/clients": {
@@ -995,45 +533,6 @@
         ],
         "summary": "List Clients",
         "operationId": "list_clients_api_v1_clients_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1044,18 +543,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/counterparties": {
@@ -1065,45 +559,6 @@
         ],
         "summary": "List Counterparties",
         "operationId": "list_counterparties_api_v1_counterparties_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1114,18 +569,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -1133,54 +583,15 @@
         ],
         "summary": "Create Counterparty",
         "operationId": "create_counterparty_api_v1_counterparties_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CounterpartyCreateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -1203,7 +614,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/counterparties/{company_id}": {
@@ -1226,38 +642,6 @@
             "schema": {
               "type": "string",
               "title": "Company Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -1304,38 +688,6 @@
               "type": "string",
               "title": "Company Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -1379,45 +731,6 @@
         ],
         "summary": "List Contacts",
         "operationId": "list_contacts_api_v1_contacts_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1428,18 +741,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -1447,54 +755,15 @@
         ],
         "summary": "Create Contact",
         "operationId": "create_contact_api_v1_contacts_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ContactCreateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -1517,7 +786,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/contacts/{contact_id}": {
@@ -1540,38 +814,6 @@
             "schema": {
               "type": "string",
               "title": "Contact Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -1618,38 +860,6 @@
               "type": "string",
               "title": "Contact Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -1693,45 +903,6 @@
         ],
         "summary": "List Disciplines",
         "operationId": "list_disciplines_api_v1_disciplines_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1742,18 +913,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -1761,54 +927,15 @@
         ],
         "summary": "Create Discipline",
         "operationId": "create_discipline_api_v1_disciplines_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DisciplineCreateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -1831,7 +958,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/disciplines/{discipline_id}": {
@@ -1854,38 +986,6 @@
             "schema": {
               "type": "string",
               "title": "Discipline Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -1932,38 +1032,6 @@
               "type": "string",
               "title": "Discipline Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -2007,45 +1075,6 @@
         ],
         "summary": "List Projects",
         "operationId": "list_projects_api_v1_projects_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2056,18 +1085,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -2075,54 +1099,15 @@
         ],
         "summary": "Create Project",
         "operationId": "create_project_api_v1_projects_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ProjectCreateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -2145,7 +1130,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/projects/{project_id}": {
@@ -2168,38 +1158,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -2245,38 +1203,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -2334,38 +1260,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -2458,38 +1352,6 @@
               ],
               "title": "Disciplineid"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -2536,38 +1398,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -2623,38 +1453,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -2712,38 +1510,6 @@
               "type": "string",
               "title": "Run Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -2799,38 +1565,6 @@
             "schema": {
               "type": "string",
               "title": "Run Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -2907,38 +1641,6 @@
               "type": "string",
               "title": "Scenario Key"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -3005,38 +1707,6 @@
               "type": "string",
               "title": "Run Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -3093,38 +1763,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -3183,38 +1821,6 @@
               "type": "string",
               "title": "Project Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -3271,38 +1877,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -3361,38 +1935,6 @@
               "type": "string",
               "title": "Project Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -3450,38 +1992,6 @@
               "type": "string",
               "title": "Project Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -3538,38 +2048,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -3682,38 +2160,6 @@
               "default": true,
               "title": "Includepinned"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -3805,38 +2251,6 @@
               ],
               "title": "Disciplineid"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -3883,38 +2297,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -3980,38 +2362,6 @@
               ],
               "title": "Projectid"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -4046,40 +2396,6 @@
         "security": [
           {
             "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -4137,38 +2453,6 @@
               "type": "string",
               "title": "Quote Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -4213,38 +2497,6 @@
             "schema": {
               "type": "string",
               "title": "Quote Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -4303,38 +2555,6 @@
               "type": "string",
               "title": "Quote Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -4383,38 +2603,6 @@
             "schema": {
               "type": "string",
               "title": "Quote Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -4473,38 +2661,6 @@
               "type": "string",
               "title": "Version Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -4549,38 +2705,6 @@
             "schema": {
               "type": "string",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -4639,38 +2763,6 @@
               "type": "string",
               "title": "Version Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -4704,54 +2796,15 @@
         ],
         "summary": "Create Quote Ingestion Upload Intent",
         "operationId": "create_quote_ingestion_upload_intent_api_v1_quote_ingestion_uploads_presign_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateQuoteIngestionUploadRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -4774,7 +2827,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/quote-ingestion/uploads/finalize": {
@@ -4784,54 +2842,15 @@
         ],
         "summary": "Finalize Quote Ingestion Upload",
         "operationId": "finalize_quote_ingestion_upload_api_v1_quote_ingestion_uploads_finalize_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/FinalizeQuoteIngestionUploadRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -4854,7 +2873,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/quote-ingestion/runs": {
@@ -4864,45 +2888,6 @@
         ],
         "summary": "List Quote Ingestion Runs",
         "operationId": "list_quote_ingestion_runs_api_v1_quote_ingestion_runs_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4913,18 +2898,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -4932,54 +2912,15 @@
         ],
         "summary": "Create Quote Ingestion Run",
         "operationId": "create_quote_ingestion_run_api_v1_quote_ingestion_runs_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateQuoteIngestionRunRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -5002,7 +2943,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/quote-ingestion/runs/{run_id}": {
@@ -5025,38 +2971,6 @@
             "schema": {
               "type": "string",
               "title": "Run Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -5104,38 +3018,6 @@
             "schema": {
               "type": "string",
               "title": "Run Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -5194,38 +3076,6 @@
               "type": "string",
               "title": "Run Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -5282,38 +3132,6 @@
             "schema": {
               "type": "string",
               "title": "Run Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -5372,38 +3190,6 @@
               "type": "string",
               "title": "Run Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -5460,38 +3246,6 @@
             "schema": {
               "type": "string",
               "title": "Object Key"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -5594,45 +3348,6 @@
         ],
         "summary": "List Actuals Import Batches",
         "operationId": "list_actuals_import_batches_api_v1_actuals_imports_batches_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5643,18 +3358,13 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -5662,54 +3372,15 @@
         ],
         "summary": "Create Actuals Import Batch",
         "operationId": "create_actuals_import_batch_api_v1_actuals_imports_batches_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateActualsImportBatchRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -5732,7 +3403,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/actuals-imports/batches/{batch_id}": {
@@ -5755,38 +3431,6 @@
             "schema": {
               "type": "string",
               "title": "Batch Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -5851,38 +3495,6 @@
               ],
               "title": "Review Queue"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -5929,38 +3541,6 @@
             "schema": {
               "type": "string",
               "title": "Batch Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -6077,38 +3657,6 @@
               "type": "string",
               "title": "Row Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -6165,38 +3713,6 @@
             "schema": {
               "type": "string",
               "title": "Batch Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -6255,38 +3771,6 @@
               "type": "string",
               "title": "Batch Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -6330,54 +3814,15 @@
         ],
         "summary": "Create Upload Intent",
         "operationId": "create_upload_intent_api_v1_files_uploads_presign_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PresignUploadRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -6400,7 +3845,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/files/uploads/finalize": {
@@ -6410,54 +3860,15 @@
         ],
         "summary": "Finalize Upload",
         "operationId": "finalize_upload_api_v1_files_uploads_finalize_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/FinalizeUploadRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -6480,7 +3891,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/files/{file_id}": {
@@ -6503,38 +3919,6 @@
             "schema": {
               "type": "string",
               "title": "File Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -6583,38 +3967,6 @@
               "type": "string",
               "title": "File Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -6646,45 +3998,6 @@
         ],
         "summary": "Get Forecast Policy",
         "operationId": "get_forecast_policy_api_v1_forecasts_policy_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -6695,18 +4008,39 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/forecasts/accuracy": {
+      "get": {
+        "tags": [
+          "forecasts"
+        ],
+        "summary": "Get Forecast Accuracy Summary",
+        "operationId": "get_forecast_accuracy_summary_api_v1_forecasts_accuracy_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ForecastAccuracySummaryRead"
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/forecasts/projects/{project_id}": {
@@ -6729,38 +4063,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -6808,38 +4110,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -6898,38 +4168,6 @@
               "type": "string",
               "title": "Version Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -6974,38 +4212,6 @@
             "schema": {
               "type": "string",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -7064,38 +4270,6 @@
               "type": "string",
               "title": "Line Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "requestBody": {
@@ -7153,38 +4327,6 @@
               "type": "string",
               "title": "Version Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -7232,38 +4374,6 @@
               "type": "string",
               "title": "Version Id"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -7310,38 +4420,6 @@
             "schema": {
               "type": "string",
               "title": "Project Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -7479,8 +4557,8 @@
             }
           },
           {
-            "name": "quotes4_access_token",
-            "in": "cookie",
+            "name": "scenarioKey",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -7491,23 +4569,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
+              "title": "Scenariokey"
             }
           }
         ],
@@ -7654,8 +4716,8 @@
             }
           },
           {
-            "name": "quotes4_access_token",
-            "in": "cookie",
+            "name": "scenarioKey",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -7666,23 +4728,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
+              "title": "Scenariokey"
             }
           }
         ],
@@ -7829,8 +4875,8 @@
             }
           },
           {
-            "name": "quotes4_access_token",
-            "in": "cookie",
+            "name": "scenarioKey",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -7841,23 +4887,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
+              "title": "Scenariokey"
             }
           }
         ],
@@ -7956,38 +4986,6 @@
               "minimum": 1,
               "default": 100,
               "title": "Limit"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -8103,38 +5101,6 @@
               "default": 100,
               "title": "Limit"
             }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
-            }
           }
         ],
         "responses": {
@@ -8181,38 +5147,6 @@
             "schema": {
               "type": "string",
               "title": "Job Id"
-            }
-          },
-          {
-            "name": "quotes4_access_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Access Token"
-            }
-          },
-          {
-            "name": "quotes4_csrf_token",
-            "in": "cookie",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Quotes4 Csrf Token"
             }
           }
         ],
@@ -11353,6 +8287,17 @@
               }
             ],
             "title": "Status"
+          },
+          "scenarioKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenariokey"
           }
         },
         "additionalProperties": false,
@@ -11488,6 +8433,13 @@
             },
             "type": "array",
             "title": "Statuses"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardOption"
+            },
+            "type": "array",
+            "title": "Scenarios"
           }
         },
         "additionalProperties": false,
@@ -11496,7 +8448,8 @@
           "clients",
           "projects",
           "disciplines",
-          "statuses"
+          "statuses",
+          "scenarios"
         ],
         "title": "DashboardFilterOptions"
       },
@@ -12360,6 +9313,542 @@
         ],
         "title": "FinalizeUploadResponse"
       },
+      "ForecastAccuracyDisciplineRead": {
+        "properties": {
+          "disciplineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplineid"
+          },
+          "disciplineCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplinecode"
+          },
+          "disciplineName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplinename"
+          },
+          "sampleCount": {
+            "type": "integer",
+            "title": "Samplecount"
+          },
+          "forecastAmount": {
+            "type": "number",
+            "title": "Forecastamount"
+          },
+          "actualAmount": {
+            "type": "number",
+            "title": "Actualamount"
+          },
+          "varianceAmount": {
+            "type": "number",
+            "title": "Varianceamount"
+          },
+          "variancePct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variancepct"
+          },
+          "meanAbsolutePercentageError": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meanabsolutepercentageerror"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sampleCount",
+          "forecastAmount",
+          "actualAmount",
+          "varianceAmount"
+        ],
+        "title": "ForecastAccuracyDisciplineRead"
+      },
+      "ForecastAccuracyMetricsRead": {
+        "properties": {
+          "comparisonProjectCount": {
+            "type": "integer",
+            "title": "Comparisonprojectcount"
+          },
+          "resolvedProjectCount": {
+            "type": "integer",
+            "title": "Resolvedprojectcount"
+          },
+          "partialProjectCount": {
+            "type": "integer",
+            "title": "Partialprojectcount"
+          },
+          "monthlyCoverageProjectCount": {
+            "type": "integer",
+            "title": "Monthlycoverageprojectcount"
+          },
+          "disciplineCoverageProjectCount": {
+            "type": "integer",
+            "title": "Disciplinecoverageprojectcount"
+          },
+          "meanAbsoluteError": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meanabsoluteerror"
+          },
+          "meanAbsolutePercentageError": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meanabsolutepercentageerror"
+          },
+          "weightedAbsolutePercentageError": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weightedabsolutepercentageerror"
+          },
+          "meanBiasAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meanbiasamount"
+          },
+          "meanBiasPercentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meanbiaspercentage"
+          },
+          "withinTenPercentRate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withintenpercentrate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "comparisonProjectCount",
+          "resolvedProjectCount",
+          "partialProjectCount",
+          "monthlyCoverageProjectCount",
+          "disciplineCoverageProjectCount"
+        ],
+        "title": "ForecastAccuracyMetricsRead"
+      },
+      "ForecastAccuracyMonthRead": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "projectCount": {
+            "type": "integer",
+            "title": "Projectcount"
+          },
+          "forecastAmount": {
+            "type": "number",
+            "title": "Forecastamount"
+          },
+          "actualAmount": {
+            "type": "number",
+            "title": "Actualamount"
+          },
+          "varianceAmount": {
+            "type": "number",
+            "title": "Varianceamount"
+          },
+          "variancePct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variancepct"
+          },
+          "absolutePercentageError": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absolutepercentageerror"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "month",
+          "projectCount",
+          "forecastAmount",
+          "actualAmount",
+          "varianceAmount"
+        ],
+        "title": "ForecastAccuracyMonthRead"
+      },
+      "ForecastAccuracyProjectComparisonRead": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "projectName": {
+            "type": "string",
+            "title": "Projectname"
+          },
+          "projectStatus": {
+            "type": "string",
+            "title": "Projectstatus"
+          },
+          "scenarioKey": {
+            "type": "string",
+            "title": "Scenariokey"
+          },
+          "confidenceScore": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidencescore"
+          },
+          "actualsStatus": {
+            "type": "string",
+            "title": "Actualsstatus"
+          },
+          "actualSource": {
+            "type": "string",
+            "title": "Actualsource"
+          },
+          "forecastAmount": {
+            "type": "number",
+            "title": "Forecastamount"
+          },
+          "actualAmount": {
+            "type": "number",
+            "title": "Actualamount"
+          },
+          "varianceAmount": {
+            "type": "number",
+            "title": "Varianceamount"
+          },
+          "variancePct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variancepct"
+          },
+          "absolutePercentageError": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absolutepercentageerror"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "projectId",
+          "projectName",
+          "projectStatus",
+          "scenarioKey",
+          "actualsStatus",
+          "actualSource",
+          "forecastAmount",
+          "actualAmount",
+          "varianceAmount"
+        ],
+        "title": "ForecastAccuracyProjectComparisonRead"
+      },
+      "ForecastAccuracyRecommendationRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "priority",
+          "title",
+          "rationale"
+        ],
+        "title": "ForecastAccuracyRecommendationRead"
+      },
+      "ForecastAccuracySummaryRead": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generatedat"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/ForecastAccuracyMetricsRead"
+          },
+          "forecastVsActual": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAccuracyProjectComparisonRead"
+            },
+            "type": "array",
+            "title": "Forecastvsactual"
+          },
+          "monthlyVariance": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAccuracyMonthRead"
+            },
+            "type": "array",
+            "title": "Monthlyvariance"
+          },
+          "disciplineVariance": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAccuracyDisciplineRead"
+            },
+            "type": "array",
+            "title": "Disciplinevariance"
+          },
+          "confidenceCalibration": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastConfidenceCalibrationRead"
+            },
+            "type": "array",
+            "title": "Confidencecalibration"
+          },
+          "scenarioAccuracy": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastScenarioAccuracyRead"
+            },
+            "type": "array",
+            "title": "Scenarioaccuracy"
+          },
+          "weaknesses": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAccuracyWeaknessRead"
+            },
+            "type": "array",
+            "title": "Weaknesses"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastAccuracyRecommendationRead"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "metrics",
+          "forecastVsActual",
+          "monthlyVariance",
+          "disciplineVariance",
+          "confidenceCalibration",
+          "scenarioAccuracy",
+          "weaknesses",
+          "recommendations"
+        ],
+        "title": "ForecastAccuracySummaryRead"
+      },
+      "ForecastAccuracyWeaknessRead": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "sampleCount": {
+            "type": "integer",
+            "title": "Samplecount"
+          },
+          "meanAbsolutePercentageError": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meanabsolutepercentageerror"
+          },
+          "varianceAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Varianceamount"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "key",
+          "label",
+          "sampleCount",
+          "detail"
+        ],
+        "title": "ForecastAccuracyWeaknessRead"
+      },
+      "ForecastConfidenceCalibrationRead": {
+        "properties": {
+          "bucketKey": {
+            "type": "string",
+            "title": "Bucketkey"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "projectCount": {
+            "type": "integer",
+            "title": "Projectcount"
+          },
+          "averageConfidenceScore": {
+            "type": "number",
+            "title": "Averageconfidencescore"
+          },
+          "averageAccuracyScore": {
+            "type": "number",
+            "title": "Averageaccuracyscore"
+          },
+          "meanAbsolutePercentageError": {
+            "type": "number",
+            "title": "Meanabsolutepercentageerror"
+          },
+          "overconfidenceGap": {
+            "type": "number",
+            "title": "Overconfidencegap"
+          },
+          "withinRangeRate": {
+            "type": "number",
+            "title": "Withinrangerate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bucketKey",
+          "label",
+          "projectCount",
+          "averageConfidenceScore",
+          "averageAccuracyScore",
+          "meanAbsolutePercentageError",
+          "overconfidenceGap",
+          "withinRangeRate"
+        ],
+        "title": "ForecastConfidenceCalibrationRead"
+      },
       "ForecastConfidenceSection": {
         "properties": {
           "projectCount": {
@@ -12391,6 +9880,48 @@
           "bands"
         ],
         "title": "ForecastConfidenceSection"
+      },
+      "ForecastCurveProfileOption": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "shapeKey": {
+            "type": "string",
+            "title": "Shapekey"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "defaultForDisciplines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Defaultfordisciplines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "shapeKey"
+        ],
+        "title": "ForecastCurveProfileOption"
       },
       "ForecastDetailRead": {
         "properties": {
@@ -12429,6 +9960,13 @@
                 "type": "null"
               }
             ]
+          },
+          "sanityChecks": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastSanityCheckRead"
+            },
+            "type": "array",
+            "title": "Sanitychecks"
           }
         },
         "additionalProperties": false,
@@ -12464,6 +10002,39 @@
           "weightedAmount": {
             "type": "number",
             "title": "Weightedamount"
+          },
+          "lowAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lowamount"
+          },
+          "highAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highamount"
+          },
+          "actualAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualamount"
           }
         },
         "additionalProperties": false,
@@ -12474,6 +10045,35 @@
           "weightedAmount"
         ],
         "title": "ForecastDisciplineMonthlyRollupRead"
+      },
+      "ForecastExplanationRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "impact": {
+            "type": "string",
+            "title": "Impact"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "impact",
+          "detail"
+        ],
+        "title": "ForecastExplanationRead"
       },
       "ForecastLineAllocationsReplaceRequest": {
         "properties": {
@@ -12606,6 +10206,142 @@
             ],
             "title": "Notes"
           },
+          "forecastMethodKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastmethodkey"
+          },
+          "allocationProfileKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allocationprofilekey"
+          },
+          "sequencingTemplateKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequencingtemplatekey"
+          },
+          "sequencingStageKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequencingstagekey"
+          },
+          "overlapPercent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overlappercent"
+          },
+          "confidenceScore": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidencescore"
+          },
+          "dataSufficiencyScore": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datasufficiencyscore"
+          },
+          "fallbackTier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallbacktier"
+          },
+          "actualsToDateAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualstodateamount"
+          },
+          "remainingAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remainingamount"
+          },
+          "forecastInputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastinputs"
+          },
+          "explanations": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastExplanationRead"
+            },
+            "type": "array",
+            "title": "Explanations"
+          },
+          "sanityChecks": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastSanityCheckRead"
+            },
+            "type": "array",
+            "title": "Sanitychecks"
+          },
           "issues": {
             "items": {
               "type": "string"
@@ -12631,6 +10367,7 @@
           "weightedTotalAmount",
           "currencyCode",
           "allocationMethod",
+          "explanations",
           "issues",
           "allocations"
         ],
@@ -12649,6 +10386,62 @@
           "weightedAmount": {
             "type": "number",
             "title": "Weightedamount"
+          },
+          "lowAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lowamount"
+          },
+          "highAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highamount"
+          },
+          "actualAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualamount"
+          },
+          "allocationSource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allocationsource"
+          },
+          "sourceContext": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcecontext"
           }
         },
         "additionalProperties": false,
@@ -12682,6 +10475,20 @@
             },
             "type": "array",
             "title": "Recalctriggers"
+          },
+          "curveProfiles": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastCurveProfileOption"
+            },
+            "type": "array",
+            "title": "Curveprofiles"
+          },
+          "sequencingTemplates": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastSequenceTemplateOption"
+            },
+            "type": "array",
+            "title": "Sequencingtemplates"
           }
         },
         "additionalProperties": false,
@@ -12706,6 +10513,39 @@
           "weightedAmount": {
             "type": "number",
             "title": "Weightedamount"
+          },
+          "lowAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lowamount"
+          },
+          "highAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highamount"
+          },
+          "actualAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualamount"
           }
         },
         "additionalProperties": false,
@@ -12761,6 +10601,195 @@
           "message"
         ],
         "title": "ForecastRecalculateResponse"
+      },
+      "ForecastSanityCheckRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation"
+          },
+          "blocking": {
+            "type": "boolean",
+            "title": "Blocking",
+            "default": false
+          },
+          "lineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lineid"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "severity",
+          "scope",
+          "title",
+          "detail"
+        ],
+        "title": "ForecastSanityCheckRead"
+      },
+      "ForecastScenarioAccuracyRead": {
+        "properties": {
+          "scenarioKey": {
+            "type": "string",
+            "title": "Scenariokey"
+          },
+          "projectCount": {
+            "type": "integer",
+            "title": "Projectcount"
+          },
+          "meanVarianceAmount": {
+            "type": "number",
+            "title": "Meanvarianceamount"
+          },
+          "meanAbsolutePercentageError": {
+            "type": "number",
+            "title": "Meanabsolutepercentageerror"
+          },
+          "meanBiasPercentage": {
+            "type": "number",
+            "title": "Meanbiaspercentage"
+          },
+          "withinTenPercentRate": {
+            "type": "number",
+            "title": "Withintenpercentrate"
+          },
+          "closestToActualRate": {
+            "type": "number",
+            "title": "Closesttoactualrate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenarioKey",
+          "projectCount",
+          "meanVarianceAmount",
+          "meanAbsolutePercentageError",
+          "meanBiasPercentage",
+          "withinTenPercentRate",
+          "closestToActualRate"
+        ],
+        "title": "ForecastScenarioAccuracyRead"
+      },
+      "ForecastSequenceTemplateOption": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "projectFormatKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Projectformatkeys"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastSequenceTemplateStageOption"
+            },
+            "type": "array",
+            "title": "Stages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "ForecastSequenceTemplateOption"
+      },
+      "ForecastSequenceTemplateStageOption": {
+        "properties": {
+          "disciplineCode": {
+            "type": "string",
+            "title": "Disciplinecode"
+          },
+          "stageKey": {
+            "type": "string",
+            "title": "Stagekey"
+          },
+          "startPct": {
+            "type": "number",
+            "title": "Startpct"
+          },
+          "endPct": {
+            "type": "number",
+            "title": "Endpct"
+          },
+          "overlapPct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overlappct"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "disciplineCode",
+          "stageKey",
+          "startPct",
+          "endPct"
+        ],
+        "title": "ForecastSequenceTemplateStageOption"
       },
       "ForecastVersionCreateRequest": {
         "properties": {
@@ -12871,6 +10900,83 @@
             "type": "number",
             "title": "Weightedtotalamount"
           },
+          "scenarioKey": {
+            "type": "string",
+            "title": "Scenariokey",
+            "default": "base"
+          },
+          "engineSource": {
+            "type": "string",
+            "title": "Enginesource",
+            "default": "unified_forecast_engine"
+          },
+          "predictionRunId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predictionrunid"
+          },
+          "predictionScenarioKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predictionscenariokey"
+          },
+          "confidenceScore": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidencescore"
+          },
+          "dataSufficiencyScore": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datasufficiencyscore"
+          },
+          "fallbackTier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallbacktier"
+          },
+          "changeSummary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changesummary"
+          },
           "sourceQuoteVersionId": {
             "anyOf": [
               {
@@ -12928,6 +11034,25 @@
               }
             ],
             "title": "Parentversionid"
+          },
+          "explanationSummary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanationsummary"
+          },
+          "sanityChecks": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastSanityCheckRead"
+            },
+            "type": "array",
+            "title": "Sanitychecks"
           },
           "issues": {
             "items": {
@@ -13023,6 +11148,83 @@
           "weightedTotalAmount": {
             "type": "number",
             "title": "Weightedtotalamount"
+          },
+          "scenarioKey": {
+            "type": "string",
+            "title": "Scenariokey",
+            "default": "base"
+          },
+          "engineSource": {
+            "type": "string",
+            "title": "Enginesource",
+            "default": "unified_forecast_engine"
+          },
+          "predictionRunId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predictionrunid"
+          },
+          "predictionScenarioKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predictionscenariokey"
+          },
+          "confidenceScore": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidencescore"
+          },
+          "dataSufficiencyScore": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datasufficiencyscore"
+          },
+          "fallbackTier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallbacktier"
+          },
+          "changeSummary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changesummary"
           },
           "sourceQuoteVersionId": {
             "anyOf": [
@@ -14050,6 +12252,10 @@
             "type": "number",
             "title": "Weightedamount"
           },
+          "bookedAmount": {
+            "type": "number",
+            "title": "Bookedamount"
+          },
           "currencyCode": {
             "type": "string",
             "title": "Currencycode"
@@ -14063,6 +12269,7 @@
           "projectCount",
           "quoteAmount",
           "weightedAmount",
+          "bookedAmount",
           "currencyCode"
         ],
         "title": "PipelineStageSummary"
@@ -19849,6 +18056,50 @@
           "weightedAmount": {
             "type": "number",
             "title": "Weightedamount"
+          },
+          "lowAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lowamount"
+          },
+          "highAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highamount"
+          },
+          "actualAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualamount"
+          },
+          "bookedAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookedamount"
           }
         },
         "additionalProperties": false,
@@ -19937,6 +18188,10 @@
             "type": "number",
             "title": "Totalweightedamount"
           },
+          "totalBookedAmount": {
+            "type": "number",
+            "title": "Totalbookedamount"
+          },
           "stages": {
             "items": {
               "$ref": "#/components/schemas/PipelineStageSummary"
@@ -19951,6 +18206,7 @@
           "currencyCode",
           "totalQuoteAmount",
           "totalWeightedAmount",
+          "totalBookedAmount",
           "stages"
         ],
         "title": "SalesPipelineSection"

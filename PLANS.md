@@ -1,3 +1,82 @@
+# Unified Forecast Engine Extension
+
+## Summary
+
+- Extend the existing `apps/api` forecast engine instead of introducing a second planning path.
+- Make `ForecastVersion` the single auditable forecast record, with predictive modules supplying explainable timing, confidence, scenario, and calibration inputs directly into forecast generation.
+- Replace the current `schedule` versus `manual` split with richer allocation profiles, sequencing-aware timing, partial-actual assimilation, version deltas, and scenario-aware aggregation while preserving editable operator overrides.
+
+## Delivery Steps
+
+1. Inspect and document the current forecast, prediction, API, UI, and worker flow so the implementation is grounded in the existing system rather than duplicating it.
+2. Extend the forecast data model for unified explainability and reforecasting: scenario key, engine source, method metadata, confidence/data-sufficiency scores, fallback tier, actual-assimilation markers, version change summaries, per-line explanatory inputs, and per-month range bands.
+3. Add forecast profile and sequencing support inside the forecast engine itself: front-, mid-, and back-loaded curves, episodic cadence, milestone weighting, schedule compression or delay handling, and discipline sequencing templates with overlap assumptions and override storage.
+4. Refactor prediction integration so `revenue_spread`, scenario, probability, and comparable evidence feed normalized forecast inputs into the forecast service instead of remaining a separate planning output that later gets copied into manual forecast lines.
+5. Extend forecast recalculation to support dynamic reforecasting on quote changes, schedule edits, actuals imports, and forecast-line overrides while preserving immutable version history, explicit delta reasons, and “why this changed” metadata.
+6. Blend partial actuals into forecast generation by replacing completed months or discipline portions with posted actuals, reforecasting only the remaining work, and storing divergence indicators against predicted timing and amount assumptions.
+7. Add scenario-aware forecast versions for `base`, `upside`, and `downside`, keeping scenario results versioned and selectable without overwriting the base forecast, and support separate operational versus commercial weighted views for pipeline work.
+8. Add project and portfolio aggregation reads that roll forecasts up by month, client, discipline, stage, and scenario without double counting and with separate booked versus probability-weighted totals.
+9. Extend forecast and project APIs so the frontend can retrieve unified explainability, scenario versions, confidence bands, version deltas, and aggregation views from the forecast module.
+10. Upgrade the forecast and scenario UI to show spread curves, forecast-versus-actual overlays, confidence ranges, scenario toggles, version comparisons, and explicit override controls tied back to the unified forecast record.
+11. Add regression coverage around allocation profiles, sequencing effects, partial actual assimilation, reforecast versioning, scenario outputs, confidence ranges, and aggregation correctness using realistic post-production examples.
+
+## Checks
+
+- `npm run contracts:generate`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test`
+- `npm run build`
+
+## Assumptions
+
+- The existing `forecasts` module remains the single source of truth for forecast outputs; prediction runs remain persisted evidence and editable assumptions, not a parallel forecast engine.
+- Backwards compatibility is preserved by keeping existing schedule/manual behaviour as explicit fallback tiers while richer methods are added incrementally.
+- Dashboard work in this pass should move from fixture-only forecast summaries toward real forecast aggregation reads, but it should not trigger a full dashboard redesign.
+
+## Follow-on Tranche
+
+1. Replace fixture-backed dashboard portfolio forecast sections with reads from persisted `ForecastVersion`, `ForecastLine`, and `MonthlyForecastAllocation` data so project and portfolio views share one forecast source.
+2. Add scenario-aware dashboard filtering so base, upside, and downside rollups can be viewed at portfolio level without overwriting current/base forecast records.
+3. Use persisted forecast confidence, confidence bands, actual overlays, and benchmark data in dashboard summaries and drilldowns rather than deriving synthetic confidence from fixture metadata.
+4. Preserve existing dashboard structure and readability while tightening its data provenance; this tranche should improve trust in the numbers, not redesign the dashboard information architecture.
+
+# Forecast Accuracy Evaluation
+
+## Summary
+
+- Add a forecast-accuracy evaluation read to `apps/api` so seeded/sample data can be measured from persisted forecasts, mapped actuals, benchmark summaries, and prediction evaluations.
+- Keep the output operational and explainable: separate complete-project accuracy from partial monthly tracking, show discipline and scenario weak spots explicitly, and derive recommendations from measured error patterns.
+- Reuse the existing forecast and prediction records instead of introducing a parallel analytics store or one-off script.
+
+## Delivery Steps
+
+1. Add forecast accuracy response schemas covering headline metrics, project comparisons, monthly variance, discipline variance, confidence calibration, scenario accuracy, weakest areas, and recommendations.
+2. Implement a forecast service read that aggregates current forecast versions against benchmark actuals and mapped actuals, keeping complete and partial evidence paths distinct.
+3. Build monthly variance tracking from persisted monthly forecast allocations and actual month coverage where mapped actuals exist, including coverage counts so gaps remain visible.
+4. Build discipline-level variance tracking from forecast line totals versus benchmark or mapped actual discipline totals, and rank the weakest disciplines by observed absolute error.
+5. Reuse persisted prediction runs and evaluations to summarize confidence calibration and scenario tracking, while explicitly calling out missing resolved scenario evidence when coverage is sparse.
+6. Expose the analysis through a forecast API endpoint and add regression coverage against the seeded demo dataset for metrics, weakness detection, and recommendation generation.
+
+## Checks
+
+- `npm run test -w @quotes4/api -- test_forecasts.py`
+- `npm run lint -w @quotes4/api`
+- `npm run build -w @quotes4/api`
+
+## Assumptions
+
+- “Sample data” refers to the repository’s seeded demo projects and the persisted forecast, benchmark, mapped-actual, and prediction-run records they generate.
+- Complete-project accuracy should only use projects with complete actual benchmarks; partial actuals still contribute to monthly tracking and coverage visibility.
+- Recommendations should remain deterministic and evidence-based, not generic prose disconnected from the measured forecast errors.
+
+## Next Risk Reduction
+
+1. Move forecast curve profiles and discipline sequencing templates into persisted forecast configuration using `reference_data_values` metadata so the engine reads editable, auditable assumptions before falling back to built-in defaults.
+2. Keep the existing forecast engine as the only allocator: configuration records should parameterize the engine, not create another planning path or duplicate predictive timing logic.
+3. Expose the active profile and sequencing catalogue through forecast policy responses so the UI can show which assumptions are available and currently governing timing.
+4. Add focused regression coverage proving database-backed configuration changes materially influence monthly timing and sequencing behaviour.
+
 # Manual Project Intake
 
 ## Summary
@@ -24,6 +103,34 @@
 
 - Manual intake in this pass covers the core project record and does not attempt full client/contact/discipline setup in the same dialog.
 - Project creation should remain available before quote import, with status defaulting to bid unless the operator explicitly chooses another valid status.
+
+# Forecast Commercial Validation
+
+## Summary
+
+- Validate the existing forecast, predictive, scenario, and dashboard logic against realistic post-production commercial cases rather than only technical happy paths.
+- Add a scenario catalogue, automated regression coverage, and a short written report that calls out where the current heuristics are commercially credible and where they can still mislead operators.
+- Reuse the current forecast engine, prediction modules, and dashboard rollups directly so the validation suite measures shipped behaviour instead of a parallel model.
+
+## Delivery Steps
+
+1. Catalogue realistic core scenarios, edge cases, and failure-pattern cases around revenue spread, discipline timing, pipeline weighting, scenario outputs, confidence bands, partial actual assimilation, schedule-change reforecasting, and rollups.
+2. Add focused automated tests that exercise the existing services and APIs with post-production shaped data, asserting commercial sanity checks instead of only response shape.
+3. Add structured runtime sanity checks with severity and blocking behaviour so suspicious outputs can be surfaced to operators without waiting for regression tests to fail.
+4. Surface blocking and warning checks in the forecast workspace UI so operators see top-level banners, scenario and confidence callouts, inline month or line flags, and repeated blocking errors before submit or lock.
+5. Record suspicious-but-current behaviours, rule severity, and UI surfacing guidance in short validation docs, including cases where the engine can return plausible numbers with weak underlying evidence.
+6. Run the targeted API and web test suites plus the relevant frontend build or type checks, then capture any residual gaps or untested risks in the handoff.
+
+## Checks
+
+- `npm run test -w @quotes4/api -- test_forecasts.py`
+- `npm run test -w @quotes4/api -- test_predictions.py`
+- `npm run test -w @quotes4/api -- test_dashboards.py`
+
+## Assumptions
+
+- This pass validates the current deterministic logic; it should not introduce a separate calibration engine or rewrite the forecast heuristics.
+- “Commercially credible” means the timing, weighted values, and scenario movement match how post-production revenue is expected to land operationally, even when the engine is intentionally heuristic.
 
 # Predictive Layer Maturation
 
@@ -139,6 +246,37 @@
 2. Add reusable validation helpers for uploaded filenames, content types, checksums, payload text bounds, and storage object keys, then apply them to file upload and import endpoints.
 3. Restrict quote-ingestion preview and storage access to registered storage keys only, removing arbitrary local-path and remote-URL reads outside test mode.
 4. Tighten role enforcement and callback validation for quote ingestion and actuals-import worker flows, including job correlation and duplicate-job prevention.
+
+# Demo And Live Environment Split
+
+## Summary
+
+- Keep the existing seeded demo workflow available as a separate environment for walkthroughs, training, and regression checks.
+- Add a second environment for real imports with its own database, storage namespace, auth cookie namespace, and operator-facing labeling so it can run alongside demo safely.
+- Make the live environment seed only baseline operational data and admin access, not demo projects or sample imports.
+
+## Delivery Steps
+
+1. Extend runtime configuration so API and web can expose an environment label, workspace description, data mode, and auth cookie names from environment variables instead of hard-coded demo defaults.
+2. Split API seeding into baseline versus demo modes so both environments receive required roles, reference data, and admin access, while only demo receives sample projects, forecasts, and imports.
+3. Update auth cookie handling in API and web so demo and live instances can both run on `localhost` without session collision.
+4. Update the login and shell UI to clearly identify whether the operator is in the demo workspace or the live-import workspace, including copy that warns when the environment is intended for real data.
+5. Parameterize Docker Compose ports, database names, storage bucket names, and service-facing URLs so the same stack definition can be launched twice with separate env files.
+6. Add checked-in environment templates and README guidance for running `demo` and `live` stacks side by side, including migration and seed commands for each environment.
+7. Add focused regression coverage around seed modes and configurable auth cookies so the environment split remains auditable and safe.
+
+## Checks
+
+- `npm run test -w @quotes4/api -- test_backend_mvp.py test_seed_demo_data.py`
+- `npm run lint -w @quotes4/api`
+- `npm run lint -w @quotes4/web`
+- `npm run typecheck -w @quotes4/web`
+
+## Assumptions
+
+- “Real data” means an operator-managed environment intended for live imports and manual data entry, not a multi-tenant production deployment with external identity or infrastructure changes.
+- Running demo and live side by side on one machine is valuable enough to justify environment-specific cookie names and port separation.
+- Separate storage buckets are desirable alongside separate databases so uploaded live source files do not mix with demo assets.
 5. Add focused frontend validation and clearer failure handling for login, PDF ingestion, and CETA import setup.
 6. Add regression tests for the hardened flows and run the relevant API, worker, web, and repo-level checks.
 
@@ -186,3 +324,30 @@
 - No database migration is needed because the variance workspace will reuse existing benchmark summary tables.
 - `packages/db` remains in-repo as an archived reference and is not part of the active runtime path.
 - Future-only schema ideas documented in legacy design notes, including `notes` and `assumptions`, stay deferred in this pass.
+
+# Forecast UI Usability Pass
+
+## Summary
+
+- Rework the forecast workspace around real operator tasks instead of a single long editor form.
+- Make monthly timing, scenario context, confidence ranges, override state, version comparison, and forecast explanations visible without hunting through the page.
+- Keep the changes within the existing forecast API surface so sales, ops, and finance can share one auditable screen.
+
+## Delivery Steps
+
+1. Reorganize the forecast page header and version controls so users can quickly identify the active scenario, lifecycle status, quote basis, and confidence posture.
+2. Replace the plain monthly table with clearer month cards and rollups that surface weighted values, confidence bands, actual overrides, and month-to-month variance at a glance.
+3. Add a scenario-focused summary and a lightweight version comparison view so users can compare base, upside, downside, and parent-version deltas without leaving the forecast workspace.
+4. Reshape line editing around override workflows by exposing schedule/manual mode, rationale capture, risk signals, and explanation visibility more explicitly before the save action.
+5. Add focused web tests for any new forecast presentation helpers and run the relevant lint, typecheck, and test checks for the touched web code.
+
+## Checks
+
+- `npm run lint -w @quotes4/web`
+- `npm run typecheck -w @quotes4/web`
+- `npm run test -- tests/web/*`
+
+## Assumptions
+
+- This pass improves usability and visibility using already-exposed forecast fields; it does not add new backend endpoints or schema changes.
+- The forecast editor remains the main project-scoped workspace for review and overrides, with richer navigation inside the existing page rather than a separate forecast console.
