@@ -1,0 +1,34 @@
+{
+  "name": "quotes4",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @quotes4/domain && npm run build -w @quotes4/contracts && npm run build -w @quotes4/api && npm run build -w @quotes4/worker && npm run build -w @quotes4/web",
+    "lint": "npm run lint -w @quotes4/domain && npm run lint -w @quotes4/contracts && npm run lint -w @quotes4/api && npm run lint -w @quotes4/worker && npm run lint -w @quotes4/web",
+    "typecheck": "npm run build -w @quotes4/domain && npm run typecheck -w @quotes4/contracts && npm run typecheck -w @quotes4/api && npm run typecheck -w @quotes4/worker && npm run typecheck -w @quotes4/web",
+    "test": "vitest run && npm run test -w @quotes4/api && npm run test -w @quotes4/worker",
+    "test:watch": "vitest",
+    "deps:python": "python3 -m pip install -e apps/api -e apps/worker",
+    "dev:web": "npm run dev -w @quotes4/web",
+    "dev:api": "npm run dev -w @quotes4/api",
+    "dev:worker": "npm run dev -w @quotes4/worker",
+    "db:migrate": "cd apps/api && alembic upgrade head",
+    "db:seed": "cd apps/api && python3 -m app.seed",
+    "contracts:generate": "npm run generate -w @quotes4/contracts",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.24.0",
+    "@types/node": "^22.14.1",
+    "eslint": "^9.24.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.29.1",
+    "vitest": "^3.1.1"
+  }
+}

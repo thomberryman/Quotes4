@@ -1,0 +1,16 @@
+{
+  "name": "@quotes4/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "generate:openapi": "python3 ../../apps/api/scripts/export_openapi.py openapi/quotes4-openapi.json",
+    "generate:types": "python3 scripts/generate_api_types.py openapi/quotes4-openapi.json src/generated/api-types.ts",
+    "generate": "npm run generate:openapi && npm run generate:types"
+  }
+}

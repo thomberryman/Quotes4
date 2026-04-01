@@ -1,0 +1,13 @@
+{
+  "name": "@quotes4/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m app.main",
+    "build": "python3 -m compileall app tests",
+    "lint": "python3 -m ruff check app tests",
+    "typecheck": "python3 -m compileall app",
+    "test": "python3 -m pytest tests"
+  }
+}

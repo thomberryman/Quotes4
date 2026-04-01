@@ -1,0 +1,1234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  bid
+  awarded
+  lost
+  active
+  complete
+  archived
+}
+
+enum ProjectOutcomeType {
+  bid
+  awarded
+  lost
+}
+
+enum CompanyClassificationType {
+  client
+  production_company
+  studio
+  streamer
+  broadcaster
+  competitor
+  vendor
+}
+
+enum ProjectPartyRole {
+  client
+  production_company
+  studio
+  streamer
+  broadcaster
+  competitor
+}
+
+enum QuoteVersionStatus {
+  draft
+  issued
+  superseded
+  accepted
+  rejected
+}
+
+enum QuoteLineItemType {
+  service
+  expense
+  discount
+  adjustment
+}
+
+enum UploadedFileCategory {
+  quote_pdf
+  quote_attachment
+  issued_quote_pdf
+  ceta_export
+  project_attachment
+  forecast_attachment
+  other
+}
+
+enum PdfExtractionRunStatus {
+  queued
+  processing
+  extracted
+  in_review
+  approved
+  rejected
+  failed
+}
+
+enum ExtractionReviewStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PdfExtractionTargetMode {
+  new_quote
+  new_version
+}
+
+enum CetaImportStatus {
+  uploaded
+  parsed
+  in_review
+  approved
+  rejected
+  failed
+}
+
+enum CetaRowStatus {
+  unmatched
+  suggested
+  mapped
+  approved
+  rejected
+}
+
+enum MappingMethod {
+  manual
+  suggested
+  rule
+}
+
+enum ActualMappingDecisionStatus {
+  suggested
+  approved
+  rejected
+}
+
+enum ForecastAllocationMethod {
+  schedule
+  manual
+}
+
+enum ForecastVersionStatus {
+  draft
+  submitted
+  locked
+  superseded
+}
+
+enum BenchmarkActualsStatus {
+  none
+  partial
+  complete
+}
+
+enum ComparableProjectLinkDisposition {
+  pinned
+  excluded
+}
+
+enum NoteType {
+  general
+  risk
+  decision
+  client_context
+}
+
+enum AssumptionType {
+  commercial
+  staffing
+  schedule
+  technical
+  client_supplied
+  other
+}
+
+model User {
+  id                         String                  @id @default(cuid())
+  email                      String                  @unique
+  normalizedEmail            String                  @unique
+  firstName                  String
+  lastName                   String
+  displayName                String?
+  jobTitle                   String?
+  isActive                   Boolean                 @default(true)
+  invitedAt                  DateTime?
+  acceptedAt                 DateTime?
+  lastLoginAt                DateTime?
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  roleAssignments            UserRoleAssignment[]
+  roleAssignmentsGranted     UserRoleAssignment[]    @relation("RoleAssignmentAssignedBy")
+  auditLogs                  AuditLog[]              @relation("AuditActor")
+  createdProjects            Project[]               @relation("ProjectCreatedBy")
+  updatedProjects            Project[]               @relation("ProjectUpdatedBy")
+  quoteVersionsCreated       QuoteVersion[]          @relation("QuoteVersionCreatedBy")
+  quoteVersionsIssued        QuoteVersion[]          @relation("QuoteVersionIssuedBy")
+  filesUploaded              UploadedFile[]          @relation("FileUploadedBy")
+  pdfExtractionRunsRequested PdfExtractionRun[]      @relation("PdfExtractionRequestedBy")
+  pdfExtractionRunsReviewed  PdfExtractionRun[]      @relation("PdfExtractionReviewedBy")
+  cetaImportsUploaded        CetaImport[]            @relation("CetaImportUploadedBy")
+  cetaImportsReviewed        CetaImport[]            @relation("CetaImportReviewedBy")
+  cetaImportsApproved        CetaImport[]            @relation("CetaImportApprovedBy")
+  projectOutcomesRecorded    ProjectOutcome[]        @relation("ProjectOutcomeRecordedBy")
+  actualMappingsCreated      ActualMappingDecision[] @relation("ActualMappingMappedBy")
+  mappedActualsCreated       MappedActual[]          @relation("MappedActualMappedBy")
+  forecastVersionsCreated    ForecastVersion[]       @relation("ForecastVersionCreatedBy")
+  forecastVersionsSubmitted  ForecastVersion[]       @relation("ForecastVersionSubmittedBy")
+  forecastVersionsLocked     ForecastVersion[]       @relation("ForecastVersionLockedBy")
+  notesCreated               Note[]                  @relation("NoteCreatedBy")
+  assumptionsCreated         Assumption[]            @relation("AssumptionCreatedBy")
+  comparableLinksCreated     ComparableProjectLink[] @relation("ComparableProjectLinkCreatedBy")
+
+  @@map("users")
+}
+
+model Role {
+  id          String               @id @default(cuid())
+  key         String               @unique
+  label       String
+  description String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  permissions RolePermission[]
+  assignments UserRoleAssignment[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  label       String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRoleAssignment {
+  id           String   @id @default(cuid())
+  userId       String
+  roleId       String
+  assignedById String?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedBy   User?    @relation("RoleAssignmentAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, roleId])
+  @@index([assignedById])
+  @@index([roleId])
+  @@map("user_role_assignments")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  projectId  String?
+  entityType String
+  entityId   String
+  action     String
+  summary    String?
+  beforeJson Json?
+  afterJson  Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("audit_logs")
+}
+
+model ReferenceDataValue {
+  id        String   @id @default(cuid())
+  category  String
+  key       String
+  label     String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, key])
+  @@index([category, isActive, sortOrder])
+  @@map("reference_data_values")
+}
+
+model Company {
+  id                  String                  @id @default(cuid())
+  name                String
+  legalName           String?
+  normalizedName      String
+  websiteUrl          String?
+  defaultCurrencyCode String?
+  notes               String?
+  isActive            Boolean                 @default(true)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  classifications     CompanyClassification[]
+  companyContacts     CompanyContact[]
+  projectParties      ProjectParty[]
+  projectContacts     ProjectContact[]
+  competitiveOutcomes ProjectOutcome[]        @relation("OutcomeCompetitorCompany")
+
+  @@index([normalizedName])
+  @@map("companies")
+}
+
+model CompanyClassification {
+  id             String                    @id @default(cuid())
+  companyId      String
+  classification CompanyClassificationType
+  createdAt      DateTime                  @default(now())
+  company        Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, classification])
+  @@index([classification])
+  @@map("company_classifications")
+}
+
+model Contact {
+  id              String           @id @default(cuid())
+  firstName       String
+  lastName        String
+  fullName        String
+  email           String?
+  normalizedEmail String?
+  phone           String?
+  mobile          String?
+  notes           String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  companyLinks    CompanyContact[]
+  projectLinks    ProjectContact[]
+
+  @@index([normalizedEmail])
+  @@index([lastName, firstName])
+  @@map("contacts")
+}
+
+model ContactRole {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  label       String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  companyUses CompanyContact[]
+  projectUses ProjectContact[]
+
+  @@map("contact_roles")
+}
+
+model CompanyContact {
+  id            String       @id @default(cuid())
+  companyId     String
+  contactId     String
+  contactRoleId String?
+  jobTitle      String?
+  department    String?
+  isPrimary     Boolean      @default(false)
+  startDate     DateTime?    @db.Date
+  endDate       DateTime?    @db.Date
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact       Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactRole   ContactRole? @relation(fields: [contactRoleId], references: [id], onDelete: SetNull)
+
+  @@unique([companyId, contactId, contactRoleId])
+  @@index([companyId, isPrimary])
+  @@index([contactId])
+  @@map("company_contacts")
+}
+
+model Discipline {
+  id                     String                        @id @default(cuid())
+  code                   String                        @unique
+  name                   String
+  sortOrder              Int                           @default(0)
+  isActive               Boolean                       @default(true)
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  projectLinks           ProjectDiscipline[]
+  scheduleRanges         ProjectScheduleRange[]
+  quoteLineItems         QuoteLineItem[]
+  pdfExtractionLineItems PdfExtractionLineItemResult[] @relation("PdfExtractionResultDiscipline")
+  pdfExtractionLineItemDecisions PdfExtractionLineItemDecision[] @relation("PdfExtractionDecisionDiscipline")
+  suggestedCetaRows      CetaImportRow[]               @relation("CetaSuggestedDiscipline")
+  actualMappingDecisions ActualMappingDecision[]
+  mappedActuals          MappedActual[]
+  forecastLines          ForecastLine[]
+  benchmarkDisciplineSummaries ProjectBenchmarkDisciplineSummary[]
+  assumptions            Assumption[]
+
+  @@index([sortOrder, isActive])
+  @@map("disciplines")
+}
+
+model LossReason {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  label       String
+  description String?
+  category    String?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  outcomes    ProjectOutcome[]
+
+  @@index([isActive])
+  @@map("loss_reasons")
+}
+
+model Project {
+  id                     String                  @id @default(cuid())
+  code                   String?                 @unique
+  name                   String
+  status                 ProjectStatus           @default(bid)
+  description            String?
+  quoteCurrencyCode      String?
+  startDate              DateTime?               @db.Date
+  endDate                DateTime?               @db.Date
+  bidDueDate             DateTime?               @db.Date
+  bidSubmittedAt         DateTime?
+  awardedAt              DateTime?
+  lostAt                 DateTime?
+  activeAt               DateTime?
+  completedAt            DateTime?
+  archivedAt             DateTime?
+  createdById            String?
+  updatedById            String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  createdBy              User?                   @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy              User?                   @relation("ProjectUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  metadata               ProjectMetadata?
+  parties                ProjectParty[]
+  contacts               ProjectContact[]
+  disciplines            ProjectDiscipline[]
+  scheduleRanges         ProjectScheduleRange[]
+  quotes                 Quote[]
+  files                  ProjectFile[]
+  pdfExtractionRuns      PdfExtractionRun[]
+  cetaImports            CetaImport[]
+  outcomes               ProjectOutcome[]
+  forecast               Forecast?
+  deliverables           ProjectDeliverable[]
+  localizationRequirements ProjectLocalizationRequirement[]
+  benchmarkSummary       ProjectBenchmarkSummary?
+  notes                  Note[]
+  assumptions            Assumption[]
+  auditLogs              AuditLog[]
+  suggestedCetaRows      CetaImportRow[]         @relation("CetaSuggestedProject")
+  actualMappingDecisions ActualMappingDecision[]
+  mappedActuals          MappedActual[]
+  comparableLinks        ComparableProjectLink[] @relation("ProjectComparableSource")
+  comparedToByLinks      ComparableProjectLink[] @relation("ProjectComparableTarget")
+
+  @@index([status, updatedAt])
+  @@index([createdAt])
+  @@map("projects")
+}
+
+model ProjectMetadata {
+  id                     String   @id @default(cuid())
+  projectId              String   @unique
+  contentType            String?
+  contentSubtype         String?
+  genre                  String?
+  formatType             String?
+  projectFormatKey       String?
+  runtimeMinutes         Int?
+  durationWeeks          Int?
+  episodeCount           Int?
+  territory              String?
+  language               String?
+  primaryLanguageCode    String?
+  finishingComplexityKey String?
+  audioComplexityKey     String?
+  vfxComplexityKey       String?
+  budgetTarget           Decimal? @db.Decimal(14, 2)
+  metadata               Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  project                Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_metadata")
+}
+
+model ProjectDeliverable {
+  id             String   @id @default(cuid())
+  projectId      String
+  deliverableKey String
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, deliverableKey])
+  @@index([deliverableKey])
+  @@map("project_deliverables")
+}
+
+model ProjectLocalizationRequirement {
+  id                  String   @id @default(cuid())
+  projectId           String
+  languageCode        String
+  territoryCode       String?
+  localizationTypeKey String
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, languageCode, territoryCode, localizationTypeKey])
+  @@index([localizationTypeKey])
+  @@map("project_localization_requirements")
+}
+
+model ProjectParty {
+  id        String           @id @default(cuid())
+  projectId String
+  companyId String
+  role      ProjectPartyRole
+  isPrimary Boolean          @default(false)
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, companyId, role])
+  @@index([projectId, role, isPrimary])
+  @@index([companyId, role])
+  @@map("project_parties")
+}
+
+model ProjectContact {
+  id            String       @id @default(cuid())
+  projectId     String
+  contactId     String
+  companyId     String?
+  contactRoleId String?
+  jobTitle      String?
+  isPrimary     Boolean      @default(false)
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contact       Contact      @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  company       Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contactRole   ContactRole? @relation(fields: [contactRoleId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, isPrimary])
+  @@index([contactId])
+  @@index([companyId])
+  @@map("project_contacts")
+}
+
+model ProjectDiscipline {
+  id           String     @id @default(cuid())
+  projectId    String
+  disciplineId String
+  isPrimary    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, disciplineId])
+  @@index([projectId, isPrimary])
+  @@map("project_disciplines")
+}
+
+model ProjectScheduleRange {
+  id                String         @id @default(cuid())
+  projectId         String
+  disciplineId      String?
+  label             String
+  startDate         DateTime       @db.Date
+  endDate           DateTime       @db.Date
+  allocationPercent Decimal?       @db.Decimal(5, 2)
+  notes             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  project           Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  discipline        Discipline?    @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  forecastLines     ForecastLine[]
+
+  @@index([projectId, startDate, endDate])
+  @@index([disciplineId, startDate])
+  @@map("project_schedule_ranges")
+}
+
+model Quote {
+  id               String         @id @default(cuid())
+  projectId        String
+  currentVersionId String?
+  quoteNumber      String?
+  title            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  currentVersion   QuoteVersion?  @relation("CurrentQuoteVersion", fields: [id, currentVersionId], references: [quoteId, id], onDelete: Restrict)
+  versions         QuoteVersion[] @relation("QuoteVersions")
+
+  @@unique([id, currentVersionId])
+  @@index([projectId, updatedAt])
+  @@map("quotes")
+}
+
+model QuoteVersion {
+  id                     String             @id @default(cuid())
+  quoteId                String
+  parentVersionId        String?
+  versionNumber          Int
+  status                 QuoteVersionStatus @default(draft)
+  title                  String?
+  currencyCode           String
+  validUntil             DateTime?          @db.Date
+  issuedAt               DateTime?
+  acceptedAt             DateTime?
+  rejectedAt             DateTime?
+  createdById            String?
+  issuedById             String?
+  clientFacingNotes      String?
+  internalNotes          String?
+  sourceDocumentDate     DateTime?          @db.Date
+  sourceVersionLabel     String?
+  subtotalAmount         Decimal            @db.Decimal(14, 2)
+  taxAmount              Decimal            @default(0) @db.Decimal(14, 2)
+  totalAmount            Decimal            @db.Decimal(14, 2)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  quote                  Quote              @relation("QuoteVersions", fields: [quoteId], references: [id], onDelete: Cascade)
+  currentForQuote        Quote?             @relation("CurrentQuoteVersion")
+  parentVersion          QuoteVersion?      @relation("QuoteVersionParent", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childVersions          QuoteVersion[]     @relation("QuoteVersionParent")
+  createdBy              User?              @relation("QuoteVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  issuedBy               User?              @relation("QuoteVersionIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+  sections               QuoteSection[]
+  files                  QuoteVersionFile[]
+  pdfExtractionApprovals PdfExtractionRun[] @relation("PdfExtractionApprovedQuoteVersion")
+  generatedForecastVersions ForecastVersion[] @relation("ForecastVersionSourceQuoteVersion")
+  benchmarkSummaries     ProjectBenchmarkSummary[]
+  assumptions            Assumption[]
+  notes                  Note[]
+
+  @@unique([quoteId, versionNumber])
+  @@unique([quoteId, id])
+  @@index([status, issuedAt])
+  @@map("quote_versions")
+}
+
+model QuoteSection {
+  id             String          @id @default(cuid())
+  quoteVersionId String
+  name           String
+  sortOrder      Int
+  subtotalAmount Decimal         @default(0) @db.Decimal(14, 2)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  quoteVersion   QuoteVersion    @relation(fields: [quoteVersionId], references: [id], onDelete: Cascade)
+  lineItems      QuoteLineItem[]
+
+  @@unique([quoteVersionId, sortOrder])
+  @@map("quote_sections")
+}
+
+model QuoteLineItem {
+  id             String            @id @default(cuid())
+  quoteSectionId String
+  sortOrder      Int
+  lineType       QuoteLineItemType @default(service)
+  disciplineId   String?
+  description    String
+  quantity       Decimal           @default(1) @db.Decimal(12, 2)
+  unit           String
+  rate           Decimal           @default(0) @db.Decimal(12, 2)
+  amount         Decimal           @default(0) @db.Decimal(14, 2)
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  quoteSection   QuoteSection      @relation(fields: [quoteSectionId], references: [id], onDelete: Cascade)
+  discipline     Discipline?       @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  forecastLines  ForecastLine[]
+
+  @@unique([quoteSectionId, sortOrder])
+  @@index([disciplineId])
+  @@map("quote_line_items")
+}
+
+model UploadedFile {
+  id                String               @id @default(cuid())
+  storageKey        String               @unique
+  originalFilename  String
+  mimeType          String
+  sizeBytes         Int
+  checksumSha256    String?
+  fileCategory      UploadedFileCategory
+  uploadedById      String?
+  uploadedAt        DateTime             @default(now())
+  uploadedBy        User?                @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  projectLinks      ProjectFile[]
+  quoteVersionLinks QuoteVersionFile[]
+  pdfExtractionRuns PdfExtractionRun[]
+  cetaImports       CetaImport[]
+  notes             Note[]
+
+  @@index([fileCategory, uploadedAt])
+  @@index([checksumSha256])
+  @@map("uploaded_files")
+}
+
+model ProjectFile {
+  id             String       @id @default(cuid())
+  projectId      String
+  uploadedFileId String
+  label          String?
+  isPrimary      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedFile   UploadedFile @relation(fields: [uploadedFileId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, uploadedFileId])
+  @@index([projectId, isPrimary])
+  @@map("project_files")
+}
+
+model QuoteVersionFile {
+  id             String       @id @default(cuid())
+  quoteVersionId String
+  uploadedFileId String
+  label          String?
+  createdAt      DateTime     @default(now())
+  quoteVersion   QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Cascade)
+  uploadedFile   UploadedFile @relation(fields: [uploadedFileId], references: [id], onDelete: Cascade)
+
+  @@unique([quoteVersionId, uploadedFileId])
+  @@map("quote_version_files")
+}
+
+model PdfExtractionRun {
+  id                     String                        @id @default(cuid())
+  projectId              String?
+  uploadedFileId         String
+  status                 PdfExtractionRunStatus        @default(queued)
+  parserName             String?
+  parserVersion          String?
+  pageCount              Int?
+  rawText                String?
+  failureCode            String?
+  failureMessage         String?
+  reviewSummaryJson      Json?
+  selectedProjectId      String?
+  selectedQuoteId        String?
+  selectedTargetMode     PdfExtractionTargetMode?
+  requestedById          String?
+  reviewedById           String?
+  reviewedAt             DateTime?
+  approvedQuoteVersionId String?
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  project                Project?                      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  uploadedFile           UploadedFile                  @relation(fields: [uploadedFileId], references: [id], onDelete: Cascade)
+  requestedBy            User?                         @relation("PdfExtractionRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  reviewedBy             User?                         @relation("PdfExtractionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  approvedQuoteVersion   QuoteVersion?                 @relation("PdfExtractionApprovedQuoteVersion", fields: [approvedQuoteVersionId], references: [id], onDelete: SetNull)
+  fieldResults           PdfExtractionFieldResult[]
+  fieldDecisions         PdfExtractionFieldDecision[]
+  lineItemResults        PdfExtractionLineItemResult[]
+  lineItemDecisions      PdfExtractionLineItemDecision[]
+  matchSuggestions       PdfExtractionMatchSuggestion[]
+
+  @@index([status, createdAt])
+  @@index([projectId, createdAt])
+  @@map("pdf_extraction_runs")
+}
+
+model PdfExtractionFieldResult {
+  id                 String                 @id @default(cuid())
+  pdfExtractionRunId String
+  fieldPath          String
+  occurrenceIndex    Int                    @default(0)
+  rawValue           String?
+  normalizedText     String?
+  normalizedAmount   Decimal?               @db.Decimal(14, 2)
+  normalizedDate     DateTime?              @db.Date
+  confidenceScore    Decimal?               @db.Decimal(5, 2)
+  pageNumber         Int?
+  reviewStatus       ExtractionReviewStatus @default(pending)
+  reviewerNote       String?
+  sourceBounds       Json?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  pdfExtractionRun   PdfExtractionRun       @relation(fields: [pdfExtractionRunId], references: [id], onDelete: Cascade)
+
+  @@unique([pdfExtractionRunId, fieldPath, occurrenceIndex])
+  @@index([reviewStatus, pageNumber])
+  @@map("pdf_extraction_field_results")
+}
+
+model PdfExtractionLineItemResult {
+  id                 String                 @id @default(cuid())
+  pdfExtractionRunId String
+  sortOrder          Int
+  sectionLabel       String?
+  disciplineId       String?
+  description        String
+  quantity           Decimal                @default(1) @db.Decimal(12, 2)
+  unit               String
+  rate               Decimal                @default(0) @db.Decimal(12, 2)
+  amount             Decimal                @default(0) @db.Decimal(14, 2)
+  currencyCode       String?
+  confidenceScore    Decimal?               @db.Decimal(5, 2)
+  pageNumber         Int?
+  reviewStatus       ExtractionReviewStatus @default(pending)
+  sourceSnippet      String?
+  sourceBounds       Json?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  pdfExtractionRun   PdfExtractionRun       @relation(fields: [pdfExtractionRunId], references: [id], onDelete: Cascade)
+  discipline         Discipline?            @relation("PdfExtractionResultDiscipline", fields: [disciplineId], references: [id], onDelete: SetNull)
+
+  @@unique([pdfExtractionRunId, sortOrder])
+  @@index([reviewStatus, pageNumber])
+  @@map("pdf_extraction_line_item_results")
+}
+
+model PdfExtractionMatchSuggestion {
+  id                 String           @id @default(cuid())
+  pdfExtractionRunId String
+  entityType         String
+  entityId           String
+  label              String
+  score              Decimal          @db.Decimal(5, 2)
+  reasonsJson        Json
+  rank               Int
+  isSelected         Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  pdfExtractionRun   PdfExtractionRun @relation(fields: [pdfExtractionRunId], references: [id], onDelete: Cascade)
+
+  @@unique([pdfExtractionRunId, entityType, entityId])
+  @@index([entityType, rank])
+  @@map("pdf_extraction_match_suggestions")
+}
+
+model PdfExtractionFieldDecision {
+  id                 String                 @id @default(cuid())
+  pdfExtractionRunId String
+  fieldPath          String
+  selectedResultId   String?
+  reviewedText       String?
+  reviewedAmount     Decimal?               @db.Decimal(14, 2)
+  reviewedDate       DateTime?              @db.Date
+  reviewStatus       ExtractionReviewStatus @default(pending)
+  reviewerNote       String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  pdfExtractionRun   PdfExtractionRun       @relation(fields: [pdfExtractionRunId], references: [id], onDelete: Cascade)
+
+  @@unique([pdfExtractionRunId, fieldPath])
+  @@index([reviewStatus, fieldPath])
+  @@map("pdf_extraction_field_decisions")
+}
+
+model PdfExtractionLineItemDecision {
+  id                 String                 @id @default(cuid())
+  pdfExtractionRunId String
+  sortOrder          Int
+  sourceResultId     String?
+  sectionLabel       String?
+  lineType           QuoteLineItemType      @default(service)
+  disciplineId       String?
+  description        String
+  quantity           Decimal                @default(1) @db.Decimal(12, 2)
+  unit               String
+  rate               Decimal                @default(0) @db.Decimal(12, 2)
+  amount             Decimal                @default(0) @db.Decimal(14, 2)
+  reviewStatus       ExtractionReviewStatus @default(pending)
+  reviewerNote       String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  pdfExtractionRun   PdfExtractionRun       @relation(fields: [pdfExtractionRunId], references: [id], onDelete: Cascade)
+  discipline         Discipline?            @relation("PdfExtractionDecisionDiscipline", fields: [disciplineId], references: [id], onDelete: SetNull)
+
+  @@unique([pdfExtractionRunId, sortOrder])
+  @@index([reviewStatus, sortOrder])
+  @@map("pdf_extraction_line_item_decisions")
+}
+
+model CetaImport {
+  id             String           @id @default(cuid())
+  projectId      String?
+  uploadedFileId String
+  sourceSystem   String?
+  status         CetaImportStatus @default(uploaded)
+  periodStart    DateTime?        @db.Date
+  periodEnd      DateTime?        @db.Date
+  rowCount       Int?
+  notes          String?
+  uploadedById   String?
+  reviewedById   String?
+  approvedById   String?
+  uploadedAt     DateTime         @default(now())
+  reviewedAt     DateTime?
+  approvedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  project        Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  uploadedFile   UploadedFile     @relation(fields: [uploadedFileId], references: [id], onDelete: Cascade)
+  uploadedBy     User?            @relation("CetaImportUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  reviewedBy     User?            @relation("CetaImportReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  approvedBy     User?            @relation("CetaImportApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  rows           CetaImportRow[]
+  mappedActuals  MappedActual[]
+  notesLog       Note[]
+
+  @@index([status, uploadedAt])
+  @@index([projectId, status])
+  @@map("ceta_imports")
+}
+
+model CetaImportRow {
+  id                    String                  @id @default(cuid())
+  cetaImportId          String
+  rowNumber             Int
+  externalProjectCode   String?
+  workDate              DateTime?               @db.Date
+  postingDate           DateTime?               @db.Date
+  sourceDisciplineCode  String?
+  description           String?
+  vendorName            String?
+  amount                Decimal                 @db.Decimal(14, 2)
+  currencyCode          String
+  status                CetaRowStatus           @default(unmatched)
+  suggestedProjectId    String?
+  suggestedDisciplineId String?
+  rawPayload            Json?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  cetaImport            CetaImport              @relation(fields: [cetaImportId], references: [id], onDelete: Cascade)
+  suggestedProject      Project?                @relation("CetaSuggestedProject", fields: [suggestedProjectId], references: [id], onDelete: SetNull)
+  suggestedDiscipline   Discipline?             @relation("CetaSuggestedDiscipline", fields: [suggestedDisciplineId], references: [id], onDelete: SetNull)
+  mappingDecisions      ActualMappingDecision[]
+  mappedActual          MappedActual?
+
+  @@unique([cetaImportId, rowNumber])
+  @@index([status, workDate])
+  @@index([externalProjectCode])
+  @@map("ceta_import_rows")
+}
+
+model ActualMappingDecision {
+  id                   String                      @id @default(cuid())
+  cetaImportRowId      String
+  mappedProjectId      String
+  mappedDisciplineId   String?
+  decisionStatus       ActualMappingDecisionStatus
+  mappingMethod        MappingMethod
+  confidenceScore      Decimal?                    @db.Decimal(5, 2)
+  notes                String?
+  mappedById           String?
+  createdAt            DateTime                    @default(now())
+  cetaImportRow        CetaImportRow               @relation(fields: [cetaImportRowId], references: [id], onDelete: Cascade)
+  mappedProject        Project                     @relation(fields: [mappedProjectId], references: [id], onDelete: Restrict)
+  mappedDiscipline     Discipline?                 @relation(fields: [mappedDisciplineId], references: [id], onDelete: SetNull)
+  mappedBy             User?                       @relation("ActualMappingMappedBy", fields: [mappedById], references: [id], onDelete: SetNull)
+  approvedMappedActual MappedActual?
+
+  @@index([cetaImportRowId, createdAt])
+  @@index([mappedProjectId, createdAt])
+  @@map("actual_mapping_decisions")
+}
+
+model MappedActual {
+  id                    String                 @id @default(cuid())
+  projectId             String
+  disciplineId          String?
+  sourceCetaImportId    String?
+  sourceCetaImportRowId String?                @unique
+  mappingDecisionId     String?                @unique
+  workDate              DateTime?              @db.Date
+  postingDate           DateTime?              @db.Date
+  description           String?
+  vendorName            String?
+  amount                Decimal                @db.Decimal(14, 2)
+  currencyCode          String
+  mappedById            String?
+  mappedAt              DateTime               @default(now())
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  project               Project                @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  discipline            Discipline?            @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  sourceCetaImport      CetaImport?            @relation(fields: [sourceCetaImportId], references: [id], onDelete: SetNull)
+  sourceCetaImportRow   CetaImportRow?         @relation(fields: [sourceCetaImportRowId], references: [id], onDelete: SetNull)
+  mappingDecision       ActualMappingDecision? @relation(fields: [mappingDecisionId], references: [id], onDelete: SetNull)
+  mappedBy              User?                  @relation("MappedActualMappedBy", fields: [mappedById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, workDate])
+  @@index([disciplineId, workDate])
+  @@map("mapped_actuals")
+}
+
+model ProjectOutcome {
+  id                  String             @id @default(cuid())
+  projectId           String
+  outcomeType         ProjectOutcomeType
+  effectiveAt         DateTime
+  competitorCompanyId String?
+  lossReasonId        String?
+  notes               String?
+  recordedById        String?
+  createdAt           DateTime           @default(now())
+  project             Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  competitorCompany   Company?           @relation("OutcomeCompetitorCompany", fields: [competitorCompanyId], references: [id], onDelete: SetNull)
+  lossReason          LossReason?        @relation(fields: [lossReasonId], references: [id], onDelete: SetNull)
+  recordedBy          User?              @relation("ProjectOutcomeRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, effectiveAt])
+  @@index([outcomeType, effectiveAt])
+  @@map("project_outcomes")
+}
+
+model Forecast {
+  id               String            @id @default(cuid())
+  projectId        String            @unique
+  currentVersionId String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  currentVersion   ForecastVersion?  @relation("CurrentForecastVersion", fields: [id, currentVersionId], references: [forecastId, id], onDelete: Restrict)
+  versions         ForecastVersion[] @relation("ForecastVersions")
+
+  @@unique([id, currentVersionId])
+  @@map("forecasts")
+}
+
+model ForecastVersion {
+  id                 String                @id @default(cuid())
+  forecastId         String
+  parentVersionId    String?
+  versionNumber      Int
+  status             ForecastVersionStatus @default(draft)
+  title              String?
+  notesText          String?
+  outcomeTypeSnapshot ProjectOutcomeType   @default(bid)
+  probabilityPercent Decimal               @default(100) @db.Decimal(5, 2)
+  sourceQuoteVersionId String?
+  revisionReason     String?
+  totalAmount        Decimal               @default(0) @db.Decimal(14, 2)
+  createdById        String?
+  submittedById      String?
+  lockedById         String?
+  submittedAt        DateTime?
+  lockedAt           DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  forecast           Forecast              @relation("ForecastVersions", fields: [forecastId], references: [id], onDelete: Cascade)
+  currentForForecast Forecast?             @relation("CurrentForecastVersion")
+  parentVersion      ForecastVersion?      @relation("ForecastVersionParent", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childVersions      ForecastVersion[]     @relation("ForecastVersionParent")
+  sourceQuoteVersion QuoteVersion?         @relation("ForecastVersionSourceQuoteVersion", fields: [sourceQuoteVersionId], references: [id], onDelete: SetNull)
+  createdBy          User?                 @relation("ForecastVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  submittedBy        User?                 @relation("ForecastVersionSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
+  lockedBy           User?                 @relation("ForecastVersionLockedBy", fields: [lockedById], references: [id], onDelete: SetNull)
+  lines              ForecastLine[]
+  notes              Note[]
+  assumptions        Assumption[]
+
+  @@unique([forecastId, versionNumber])
+  @@unique([forecastId, id])
+  @@index([status, createdAt])
+  @@index([outcomeTypeSnapshot, createdAt])
+  @@map("forecast_versions")
+}
+
+model ForecastLine {
+  id                    String                      @id @default(cuid())
+  forecastVersionId     String
+  sortOrder             Int
+  disciplineId          String?
+  sourceQuoteLineItemId String?
+  scheduleRangeId       String?
+  label                 String
+  allocationMethod      ForecastAllocationMethod
+  totalAmount           Decimal                     @db.Decimal(14, 2)
+  currencyCode          String
+  notes                 String?
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  forecastVersion       ForecastVersion             @relation(fields: [forecastVersionId], references: [id], onDelete: Cascade)
+  discipline            Discipline?                 @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  sourceQuoteLineItem   QuoteLineItem?              @relation(fields: [sourceQuoteLineItemId], references: [id], onDelete: SetNull)
+  scheduleRange         ProjectScheduleRange?       @relation(fields: [scheduleRangeId], references: [id], onDelete: SetNull)
+  allocations           MonthlyForecastAllocation[]
+
+  @@unique([forecastVersionId, sortOrder])
+  @@index([disciplineId])
+  @@map("forecast_lines")
+}
+
+model MonthlyForecastAllocation {
+  id             String       @id @default(cuid())
+  forecastLineId String
+  month          DateTime     @db.Date
+  amount         Decimal      @db.Decimal(14, 2)
+  manualNote     String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  forecastLine   ForecastLine @relation(fields: [forecastLineId], references: [id], onDelete: Cascade)
+
+  @@unique([forecastLineId, month])
+  @@index([month])
+  @@map("monthly_forecast_allocations")
+}
+
+model Note {
+  id                String           @id @default(cuid())
+  projectId         String?
+  quoteVersionId    String?
+  forecastVersionId String?
+  cetaImportId      String?
+  uploadedFileId    String?
+  noteType          NoteType         @default(general)
+  title             String?
+  body              String
+  isPinned          Boolean          @default(false)
+  createdById       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  project           Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  quoteVersion      QuoteVersion?    @relation(fields: [quoteVersionId], references: [id], onDelete: Cascade)
+  forecastVersion   ForecastVersion? @relation(fields: [forecastVersionId], references: [id], onDelete: Cascade)
+  cetaImport        CetaImport?      @relation(fields: [cetaImportId], references: [id], onDelete: Cascade)
+  uploadedFile      UploadedFile?    @relation(fields: [uploadedFileId], references: [id], onDelete: SetNull)
+  createdBy         User?            @relation("NoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([quoteVersionId, createdAt])
+  @@index([forecastVersionId, createdAt])
+  @@map("notes")
+}
+
+model Assumption {
+  id                String           @id @default(cuid())
+  projectId         String?
+  quoteVersionId    String?
+  forecastVersionId String?
+  disciplineId      String?
+  assumptionType    AssumptionType   @default(other)
+  label             String
+  valueText         String?
+  quantity          Decimal?         @db.Decimal(12, 2)
+  unit              String?
+  rate              Decimal?         @db.Decimal(12, 2)
+  amount            Decimal?         @db.Decimal(14, 2)
+  currencyCode      String?
+  sortOrder         Int              @default(0)
+  createdById       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  project           Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  quoteVersion      QuoteVersion?    @relation(fields: [quoteVersionId], references: [id], onDelete: Cascade)
+  forecastVersion   ForecastVersion? @relation(fields: [forecastVersionId], references: [id], onDelete: Cascade)
+  discipline        Discipline?      @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  createdBy         User?            @relation("AssumptionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, sortOrder])
+  @@index([quoteVersionId, sortOrder])
+  @@index([forecastVersionId, sortOrder])
+  @@map("assumptions")
+}
+
+model ComparableProjectLink {
+  id                  String                          @id @default(cuid())
+  projectId           String
+  comparableProjectId String
+  disposition         ComparableProjectLinkDisposition
+  score               Decimal                         @db.Decimal(5, 2)
+  note                String?
+  createdById         String?
+  scoringModelVersion String?
+  reasonsJson         Json
+  createdAt           DateTime                        @default(now())
+  updatedAt           DateTime                        @updatedAt
+  project             Project                         @relation("ProjectComparableSource", fields: [projectId], references: [id], onDelete: Cascade)
+  comparableProject   Project                         @relation("ProjectComparableTarget", fields: [comparableProjectId], references: [id], onDelete: Cascade)
+  createdBy           User?                           @relation("ComparableProjectLinkCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, comparableProjectId])
+  @@index([projectId, disposition])
+  @@map("comparable_project_links")
+}
+
+model ProjectBenchmarkSummary {
+  id                          String                          @id @default(cuid())
+  projectId                   String                          @unique
+  sourceQuoteVersionId        String?
+  currencyCode                String
+  quotedAmount                Decimal                         @db.Decimal(14, 2)
+  actualAmount                Decimal?                        @db.Decimal(14, 2)
+  quoteToActualVarianceAmount Decimal?                        @db.Decimal(14, 2)
+  quoteToActualVariancePct    Decimal?                        @db.Decimal(7, 2)
+  actualsStatus               BenchmarkActualsStatus          @default(none)
+  actualsAsOfDate             DateTime?                       @db.Date
+  generatedAt                 DateTime                        @default(now())
+  updatedAt                   DateTime                        @updatedAt
+  project                     Project                         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceQuoteVersion          QuoteVersion?                   @relation(fields: [sourceQuoteVersionId], references: [id], onDelete: SetNull)
+  disciplineSummaries         ProjectBenchmarkDisciplineSummary[]
+
+  @@index([actualsStatus, generatedAt])
+  @@map("project_benchmark_summaries")
+}
+
+model ProjectBenchmarkDisciplineSummary {
+  id                          String                 @id @default(cuid())
+  benchmarkSummaryId          String
+  disciplineId                String
+  quotedAmount                Decimal                @db.Decimal(14, 2)
+  actualAmount                Decimal?               @db.Decimal(14, 2)
+  quoteToActualVarianceAmount Decimal?               @db.Decimal(14, 2)
+  quoteToActualVariancePct    Decimal?               @db.Decimal(7, 2)
+  actualsStatus               BenchmarkActualsStatus @default(none)
+  generatedAt                 DateTime               @default(now())
+  updatedAt                   DateTime               @updatedAt
+  benchmarkSummary            ProjectBenchmarkSummary @relation(fields: [benchmarkSummaryId], references: [id], onDelete: Cascade)
+  discipline                  Discipline             @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+
+  @@unique([benchmarkSummaryId, disciplineId])
+  @@index([disciplineId, actualsStatus])
+  @@map("project_benchmark_discipline_summaries")
+}

@@ -1,0 +1,122 @@
+from __future__ import annotations
+
+PERMISSION_DEFINITIONS: dict[str, dict[str, str]] = {
+    "users.read_self": {"label": "Read Own User", "description": "Read the current user profile."},
+    "users.read": {"label": "Read Users", "description": "List and read users."},
+    "users.write": {"label": "Write Users", "description": "Create and update users."},
+    "roles.assign": {"label": "Assign Roles", "description": "Assign roles to users."},
+    "counterparties.read": {
+        "label": "Read Counterparties",
+        "description": "List and read companies and clients.",
+    },
+    "counterparties.write": {
+        "label": "Write Counterparties",
+        "description": "Create and update companies and clients.",
+    },
+    "contacts.read": {"label": "Read Contacts", "description": "List and read contacts."},
+    "contacts.write": {"label": "Write Contacts", "description": "Create and update contacts."},
+    "disciplines.read": {"label": "Read Disciplines", "description": "List and read disciplines."},
+    "disciplines.write": {
+        "label": "Write Disciplines",
+        "description": "Create and update disciplines.",
+    },
+    "projects.read": {"label": "Read Projects", "description": "List and read projects."},
+    "projects.write": {"label": "Write Projects", "description": "Create and update projects."},
+    "quotes.read": {"label": "Read Quotes", "description": "List and read quotes."},
+    "quotes.write": {"label": "Write Quotes", "description": "Create and update draft quotes."},
+    "quotes.issue": {"label": "Issue Quotes", "description": "Issue quote versions."},
+    "forecasts.read": {"label": "Read Forecasts", "description": "List and read forecasts."},
+    "forecasts.write": {
+        "label": "Write Forecasts",
+        "description": "Create and update forecast drafts and allocations.",
+    },
+    "forecasts.lock": {
+        "label": "Lock Forecasts",
+        "description": "Submit and lock forecast versions.",
+    },
+    "actuals_imports.read": {
+        "label": "Read Actuals Imports",
+        "description": "List and review staged CETA actuals import batches.",
+    },
+    "actuals_imports.write": {
+        "label": "Write Actuals Imports",
+        "description": "Create batches, process files, and save row review decisions.",
+    },
+    "actuals_imports.approve": {
+        "label": "Approve Actuals Imports",
+        "description": "Approve or reject staged CETA import batches.",
+    },
+    "files.read": {"label": "Read Files", "description": "Read uploaded file metadata."},
+    "files.write": {
+        "label": "Write Files",
+        "description": "Create upload intents and attach files.",
+    },
+    "audit.read": {"label": "Read Audit", "description": "Read audit logs."},
+    "jobs.read": {"label": "Read Jobs", "description": "Read background jobs."},
+}
+
+ROLE_DEFINITIONS: dict[str, dict[str, object]] = {
+    "system_admin": {
+        "label": "System Admin",
+        "description": "Full operational access across the backend MVP.",
+        "permissions": sorted(PERMISSION_DEFINITIONS.keys()),
+    },
+    "sales": {
+        "label": "Sales",
+        "description": "Commercial users managing counterparties, projects, quotes, and files.",
+        "permissions": [
+            "users.read_self",
+            "counterparties.read",
+            "counterparties.write",
+            "contacts.read",
+            "contacts.write",
+            "disciplines.read",
+            "projects.read",
+            "projects.write",
+            "quotes.read",
+            "quotes.write",
+            "files.read",
+            "files.write",
+            "forecasts.read",
+            "jobs.read",
+        ],
+    },
+    "finance_analyst": {
+        "label": "Finance Analyst",
+        "description": "Financial users maintaining forecasts and operational traceability.",
+        "permissions": [
+            "users.read_self",
+            "counterparties.read",
+            "contacts.read",
+            "disciplines.read",
+            "projects.read",
+            "quotes.read",
+            "forecasts.read",
+            "forecasts.write",
+            "forecasts.lock",
+            "actuals_imports.read",
+            "actuals_imports.write",
+            "actuals_imports.approve",
+            "files.read",
+            "audit.read",
+            "jobs.read",
+        ],
+    },
+    "leadership": {
+        "label": "Leadership",
+        "description": "Read-only operational oversight across the MVP backend.",
+        "permissions": [
+            "users.read_self",
+            "counterparties.read",
+            "contacts.read",
+            "disciplines.read",
+            "projects.read",
+            "quotes.read",
+            "forecasts.read",
+            "actuals_imports.read",
+            "files.read",
+            "audit.read",
+            "jobs.read",
+        ],
+    },
+}
