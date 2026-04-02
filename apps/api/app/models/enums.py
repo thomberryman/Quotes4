@@ -105,6 +105,10 @@ class ForecastAllocationMethod(StrEnum):
     manual = "manual"
 
 
+class RevenueAllocationMethod(StrEnum):
+    cadence_profile = "cadence_profile"
+
+
 class BenchmarkActualsStatus(StrEnum):
     none = "none"
     partial = "partial"

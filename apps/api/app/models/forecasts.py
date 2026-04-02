@@ -4,6 +4,7 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -21,6 +22,7 @@ from app.models.base import Base, IdentifierMixin, JsonObjectType, TimestampMixi
 from app.models.enums import ForecastAllocationMethod, ForecastVersionStatus, ProjectOutcomeType
 
 if TYPE_CHECKING:
+    from app.models.auth import User
     from app.models.projects import Project, ProjectScheduleRange
     from app.models.quotes import QuoteLineItem, QuoteVersion
     from app.models.reference import Discipline
@@ -236,6 +238,8 @@ class MonthlyForecastAllocation(IdentifierMixin, TimestampMixin, Base):
         JsonObjectType,
         nullable=True,
     )
+    is_manual_override: Mapped[bool] = mapped_column(Boolean(), default=False)
+    is_locked: Mapped[bool] = mapped_column(Boolean(), default=False)
     manual_note: Mapped[str | None] = mapped_column(Text(), nullable=True)
 
     forecast_line: Mapped[ForecastLine] = relationship(back_populates="allocations")
@@ -249,4 +253,102 @@ class MonthlyForecastAllocation(IdentifierMixin, TimestampMixin, Base):
             unique=True,
         ),
         Index("ix_monthly_forecast_allocations_month", "month"),
+    )
+
+
+class ForecastPhasingChange(IdentifierMixin, Base):
+    __tablename__ = "forecast_phasing_changes"
+
+    forecast_version_id: Mapped[str] = mapped_column(
+        ForeignKey("forecast_versions.id", ondelete="CASCADE")
+    )
+    forecast_line_id: Mapped[str | None] = mapped_column(
+        ForeignKey("forecast_lines.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    discipline_id: Mapped[str | None] = mapped_column(
+        ForeignKey("disciplines.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    actor_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    row_mode: Mapped[str] = mapped_column(String(32))
+    month: Mapped[date] = mapped_column(Date())
+    before_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    after_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    before_locked: Mapped[bool] = mapped_column(Boolean(), default=False)
+    after_locked: Mapped[bool] = mapped_column(Boolean(), default=False)
+    source_method: Mapped[str] = mapped_column(String(64))
+    reason: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        Index(
+            "ix_forecast_phasing_changes_project_created_at",
+            "project_id",
+            "created_at",
+        ),
+        Index(
+            "ix_forecast_phasing_changes_version_month",
+            "forecast_version_id",
+            "month",
+        ),
+        Index(
+            "ix_forecast_phasing_changes_line_month",
+            "forecast_line_id",
+            "month",
+        ),
+    )
+
+
+class ForecastPhasingDraft(IdentifierMixin, TimestampMixin, Base):
+    __tablename__ = "forecast_phasing_drafts"
+
+    forecast_version_id: Mapped[str] = mapped_column(
+        ForeignKey("forecast_versions.id", ondelete="CASCADE")
+    )
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    discipline_id: Mapped[str | None] = mapped_column(
+        ForeignKey("disciplines.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    updated_by_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    row_mode: Mapped[str] = mapped_column(String(32))
+    row_key: Mapped[str] = mapped_column(String(96))
+    save_mode: Mapped[str] = mapped_column(String(16), default="replace")
+    current_state_json: Mapped[dict[str, object]] = mapped_column(
+        "current_state",
+        JsonObjectType,
+        default=dict,
+    )
+    past_states_json: Mapped[list[dict[str, object]]] = mapped_column(
+        "past_states",
+        JsonObjectType,
+        default=list,
+    )
+    future_states_json: Mapped[list[dict[str, object]]] = mapped_column(
+        "future_states",
+        JsonObjectType,
+        default=list,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_forecast_phasing_drafts_project_updated_at",
+            "project_id",
+            "updated_at",
+        ),
+        Index(
+            "ix_forecast_phasing_drafts_version_row_key",
+            "forecast_version_id",
+            "row_key",
+            unique=True,
+        ),
     )

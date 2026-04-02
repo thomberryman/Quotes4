@@ -15,7 +15,14 @@ from app.models.comparables import (
     ProjectBenchmarkSummary,
 )
 from app.models.files import ProjectFile, QuoteVersionFile, UploadedFile
-from app.models.forecasts import Forecast, ForecastLine, ForecastVersion, MonthlyForecastAllocation
+from app.models.forecasts import (
+    Forecast,
+    ForecastLine,
+    ForecastPhasingChange,
+    ForecastPhasingDraft,
+    ForecastVersion,
+    MonthlyForecastAllocation,
+)
 from app.models.ingestion import (
     ActualMappingDecision,
     ActualMappingRule,
@@ -78,6 +85,8 @@ __all__ = [
     "Discipline",
     "Forecast",
     "ForecastLine",
+    "ForecastPhasingChange",
+    "ForecastPhasingDraft",
     "ForecastVersion",
     "LossReason",
     "MappedActual",

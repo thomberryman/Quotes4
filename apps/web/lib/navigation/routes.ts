@@ -36,6 +36,12 @@ export const navigationGroups: NavGroup[] = [
           "Project list with drill-down into quote, forecast, and comparables.",
       },
       {
+        label: "Revenue Phasing",
+        href: "/projects/phasing",
+        description:
+          "Spreadsheet-style monthly revenue planning across projects and disciplines.",
+      },
+      {
         label: "Imports",
         href: "/imports",
         description: "PDF and CETA ingestion workflows.",

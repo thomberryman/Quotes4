@@ -262,6 +262,23 @@ function summarizeForecastInputs(
   if (typeof inputs.actualMonthCount === "number") {
     parts.push(`${String(inputs.actualMonthCount)} actual month(s)`);
   }
+  if (
+    typeof inputs.appliedScheduleShiftMonths === "number" &&
+    inputs.appliedScheduleShiftMonths !== 0
+  ) {
+    parts.push(`Shift ${inputs.appliedScheduleShiftMonths > 0 ? "+" : ""}${String(inputs.appliedScheduleShiftMonths)} mo`);
+  }
+  if (
+    typeof inputs.durationScaleMultiplier === "number" &&
+    Math.abs(inputs.durationScaleMultiplier - 1) >= 0.01
+  ) {
+    parts.push(`Duration x${inputs.durationScaleMultiplier.toFixed(2)}`);
+  }
+  if (typeof inputs.quoteVsPredictionDeltaPct === "number") {
+    parts.push(
+      `Prediction delta ${inputs.quoteVsPredictionDeltaPct > 0 ? "+" : ""}${inputs.quoteVsPredictionDeltaPct.toFixed(1)}%`,
+    );
+  }
 
   return parts.length > 0 ? parts.join(" · ") : null;
 }
@@ -2281,12 +2298,12 @@ export function ForecastEditor({
       </SectionCard>
 
       <SectionCard
-        title="Override Workflow"
-        description="Review exceptions first, then change allocation mode, capture rationale, and save the line."
+        title="Line Planning"
+        description="Review exceptions first, then adjust the base line planning mode. Use Revenue Phasing for month-by-month manual overrides."
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <SummaryStat label="Manual overrides" value={String(manualLineCount)} />
-          <SummaryStat label="Schedule-driven lines" value={String(scheduleLineCount)} />
+          <SummaryStat label="Fully manual lines" value={String(manualLineCount)} />
+          <SummaryStat label="System-generated lines" value={String(scheduleLineCount)} />
           <SummaryStat
             label="Lines flagged"
             tone={attentionLineCount > 0 ? "warning" : "default"}
@@ -2301,9 +2318,16 @@ export function ForecastEditor({
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
           <p className="font-medium text-slate-900">Operator flow</p>
           <p className="mt-2">
-            1. Review issues and explanations. 2. Choose schedule-driven or manual
-            timing. 3. Record the rationale for the change. 4. Save the line so
-            audit history and recalculation behaviour stay traceable.
+            1. Review issues and explanations. 2. Choose the base line planning mode. 3. Record
+            the rationale for the change. 4. Save the line so audit history and recalculation
+            behaviour stay traceable.
+          </p>
+          <p className="mt-2">
+            Month-by-month operator overrides now belong in{" "}
+            <Link className="font-medium text-slate-900 underline" href={`/projects/phasing?projectId=${projectId}`}>
+              Revenue Phasing
+            </Link>
+            , so the monthly spreadsheet and dashboard both read from one phasing model.
           </p>
         </div>
 

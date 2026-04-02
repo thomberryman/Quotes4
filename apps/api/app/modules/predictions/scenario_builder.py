@@ -42,6 +42,7 @@ def _scenario_risk(base_risk: dict[str, Any], variance_delta_pct: float, schedul
 def build_scenarios(
     *,
     quote_guidance: dict[str, Any] | None,
+    spend_prediction: dict[str, Any] | None,
     discipline_predictions: list[dict[str, Any]],
     monthly_revenue_spread: list[dict[str, Any]],
     overrun_risk: dict[str, Any],
@@ -66,6 +67,65 @@ def build_scenarios(
             for key in ("low", "median", "high", "recommendedLow", "recommendedMedian", "recommendedHigh"):
                 if scenario_quote.get(key) is not None:
                     scenario_quote[key] = round(float(scenario_quote[key]) * quote_multiplier, 2)
+
+        scenario_spend = deepcopy(spend_prediction) if spend_prediction is not None else None
+        if scenario_spend is not None:
+            base_confidence_score = float(scenario_spend.get("confidenceScore") or 0)
+            adjusted_confidence_score = clamp(
+                base_confidence_score
+                - max(0.0, variance_delta_pct * 0.8)
+                + max(0.0, abs(min(variance_delta_pct, 0.0)) * 0.2),
+                0.0,
+                100.0,
+            )
+            discipline_spend = scenario_spend.get("disciplineSpend") or []
+            for item in discipline_spend:
+                current_actual_cost = round(float(item.get("currentActualCost") or 0), 2)
+                if item.get("predictedTotalCost") is not None:
+                    scaled_total = round(float(item["predictedTotalCost"]) * actual_multiplier, 2)
+                    scaled_total = max(current_actual_cost, scaled_total)
+                    item["predictedTotalCost"] = scaled_total
+                    item["predictedRemainingCost"] = round(
+                        max(0.0, scaled_total - current_actual_cost),
+                        2,
+                    )
+            predicted_total_cost = (
+                round(
+                    sum(float(item.get("predictedTotalCost") or 0) for item in discipline_spend),
+                    2,
+                )
+                if discipline_spend
+                else round(float(scenario_spend["predictedTotalCost"]) * actual_multiplier, 2)
+                if scenario_spend.get("predictedTotalCost") is not None
+                else None
+            )
+            current_actual_cost = round(float(scenario_spend.get("currentActualCost") or 0), 2)
+            if predicted_total_cost is not None:
+                predicted_total_cost = max(current_actual_cost, predicted_total_cost)
+            scenario_quote_median = (
+                scenario_quote.get("recommendedMedian") or scenario_quote.get("median")
+                if scenario_quote is not None
+                else None
+            )
+            implied_margin_amount = (
+                round(float(scenario_quote_median) - float(predicted_total_cost), 2)
+                if scenario_quote_median not in (None, 0) and predicted_total_cost is not None
+                else None
+            )
+            scenario_spend["predictedTotalCost"] = predicted_total_cost
+            scenario_spend["predictedRemainingCost"] = (
+                round(max(0.0, float(predicted_total_cost) - current_actual_cost), 2)
+                if predicted_total_cost is not None
+                else None
+            )
+            scenario_spend["impliedMarginAmount"] = implied_margin_amount
+            scenario_spend["impliedMarginPct"] = (
+                round((float(implied_margin_amount) / float(scenario_quote_median)) * 100, 2)
+                if implied_margin_amount is not None and scenario_quote_median not in (None, 0)
+                else None
+            )
+            scenario_spend["confidenceScore"] = round(adjusted_confidence_score, 2)
+            scenario_spend["confidence"] = confidence_label(adjusted_confidence_score)
 
         scenario_disciplines = deepcopy(discipline_predictions)
         for item in scenario_disciplines:
@@ -123,6 +183,7 @@ def build_scenarios(
             "isExpected": scenario_key == "base",
             "assumptionOverrides": merged,
             "likelyQuoteRange": scenario_quote,
+            "spendSummary": scenario_spend,
             "disciplineUsage": scenario_disciplines,
             "monthlyRevenueSpread": sorted(scenario_monthly, key=lambda item: item["month"]),
             "overrunRisk": _scenario_risk(overrun_risk, variance_delta_pct, schedule_shift_months),

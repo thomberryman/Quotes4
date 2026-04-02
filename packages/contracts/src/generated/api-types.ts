@@ -524,6 +524,57 @@ export interface DashboardFilterOptions {
   scenarios: DashboardOption[];
 }
 
+export interface DashboardForecastAggregationsRead {
+  totalsByMonth: DashboardForecastMonthTotalRead[];
+  totalsByStatus: DashboardForecastStatusTotalRead[];
+  totalsByDiscipline: DashboardForecastDisciplineTotalRead[];
+}
+
+export interface DashboardForecastDatasetContractRead {
+  generatedAt: string;
+  currencyCode: string;
+  fromMonth: string;
+  toMonth: string;
+  scenarioKey: string;
+  projects: DashboardForecastProjectContractRead[];
+  monthlyRows: DashboardForecastMonthRowRead[];
+  aggregations: DashboardForecastAggregationsRead;
+}
+
+export interface DashboardForecastDisciplineTotalRead {
+  discipline?: string | null;
+  revenueValue: number;
+}
+
+export interface DashboardForecastMonthRowRead {
+  month: string;
+  revenueValue: number;
+  projectId: string;
+  discipline?: string | null;
+  allocationMethod: "schedule" | "manual";
+  overrideFlag?: boolean;
+}
+
+export interface DashboardForecastMonthTotalRead {
+  month: string;
+  revenueValue: number;
+}
+
+export interface DashboardForecastProjectContractRead {
+  projectId: string;
+  projectName: string;
+  client: string;
+  status: "estimated" | "awarded" | "lost";
+  executionStartDate?: string | null;
+  executionEndDate?: string | null;
+  totalForecastValue: number;
+}
+
+export interface DashboardForecastStatusTotalRead {
+  status: "estimated" | "awarded" | "lost";
+  revenueValue: number;
+}
+
 export interface DashboardOption {
   id: string;
   label: string;
@@ -861,6 +912,183 @@ export interface ForecastMonthlyAllocationRead {
   actualAmount?: number | null;
   allocationSource?: string | null;
   sourceContext?: { [key: string]: unknown; } | null;
+  isManualOverride?: boolean;
+  isLocked?: boolean;
+  manualNote?: string | null;
+}
+
+export interface ForecastPhasingCellRead {
+  month: string;
+  amount: number;
+  weightedAmount: number;
+  actualAmount?: number | null;
+  lowAmount?: number | null;
+  highAmount?: number | null;
+  allocationSource?: string | null;
+  isManualOverride?: boolean;
+  isLocked?: boolean;
+  editable?: boolean;
+  manualNote?: string | null;
+}
+
+export interface ForecastPhasingCellWrite {
+  month: string;
+  amount: number;
+  isLocked?: boolean;
+  note?: string | null;
+}
+
+export interface ForecastPhasingChangeRead {
+  id: string;
+  projectId: string;
+  forecastVersionId: string;
+  rowMode: string;
+  month: string;
+  disciplineId?: string | null;
+  beforeAmount: number;
+  afterAmount: number;
+  beforeLocked?: boolean;
+  afterLocked?: boolean;
+  sourceMethod: string;
+  reason?: string | null;
+  note?: string | null;
+  actorId?: string | null;
+  actorEmail?: string | null;
+  createdAt: string;
+}
+
+export interface ForecastPhasingDraftRead {
+  id: string;
+  forecastVersionId: string;
+  projectId: string;
+  rowMode: string;
+  disciplineId?: string | null;
+  saveMode?: string;
+  currentState: ForecastPhasingDraftStateRead;
+  pastStates?: ForecastPhasingDraftStateRead[];
+  futureStates?: ForecastPhasingDraftStateRead[];
+  updatedById?: string | null;
+  updatedByEmail?: string | null;
+  updatedAt: string;
+}
+
+export interface ForecastPhasingDraftStateRead {
+  forecastVersionId?: string | null;
+  expectedUpdatedAt: string;
+  reason?: string | null;
+  cells?: ForecastPhasingCellWrite[];
+}
+
+export interface ForecastPhasingDraftStateWrite {
+  forecastVersionId?: string | null;
+  expectedUpdatedAt: string;
+  reason?: string | null;
+  cells?: ForecastPhasingCellWrite[];
+}
+
+export interface ForecastPhasingDraftUpsertRequest {
+  rowMode: string;
+  disciplineId?: string | null;
+  saveMode?: string;
+  expectedDraftUpdatedAt?: string | null;
+  currentState: ForecastPhasingDraftStateWrite;
+  pastStates?: ForecastPhasingDraftStateWrite[];
+  futureStates?: ForecastPhasingDraftStateWrite[];
+}
+
+export interface ForecastPhasingFilterOption {
+  id: string;
+  label: string;
+}
+
+export interface ForecastPhasingFilterOptions {
+  clients: ForecastPhasingFilterOption[];
+  projects: ForecastPhasingFilterOption[];
+  disciplines: ForecastPhasingFilterOption[];
+  statuses: ForecastPhasingFilterOption[];
+  scenarios: ForecastPhasingFilterOption[];
+}
+
+export interface ForecastPhasingMonthTotalRead {
+  month: string;
+  amount: number;
+  weightedAmount: number;
+}
+
+export interface ForecastPhasingPreviewRead {
+  projectId: string;
+  rowMode: string;
+  disciplineId?: string | null;
+  action: string;
+  cells?: ForecastPhasingCellWrite[];
+}
+
+export interface ForecastPhasingPreviewRequest {
+  projectId: string;
+  rowMode: string;
+  disciplineId?: string | null;
+  fromMonth: string;
+  toMonth: string;
+  action: string;
+  lockedMonths?: string[];
+  cadenceProfileType?: string | null;
+}
+
+export interface ForecastPhasingRowRead {
+  rowKey: string;
+  rowMode: string;
+  projectId: string;
+  projectName: string;
+  clientId?: string | null;
+  clientName?: string | null;
+  status: string;
+  disciplineId?: string | null;
+  disciplineName?: string | null;
+  forecastVersionId?: string | null;
+  forecastVersionStatus?: string | null;
+  forecastVersionUpdatedAt?: string | null;
+  scenarioKey?: string;
+  currencyCode?: string;
+  basePhasingProfile?: string | null;
+  executionStartDate?: string | null;
+  executionEndDate?: string | null;
+  totalAmount: number;
+  weightedTotalAmount: number;
+  canEdit?: boolean;
+  cells?: ForecastPhasingCellRead[];
+  activeDraft?: ForecastPhasingDraftRead | null;
+}
+
+export interface ForecastPhasingRowUpdateRequest {
+  forecastVersionId?: string | null;
+  expectedUpdatedAt: string;
+  rowMode: string;
+  disciplineId?: string | null;
+  cells?: ForecastPhasingCellWrite[];
+  replaceExistingOverrides?: boolean;
+  sourceMethod?: string;
+  reason?: string | null;
+}
+
+export interface ForecastPhasingStatusMonthTotalRead {
+  status: string;
+  month: string;
+  amount: number;
+  weightedAmount: number;
+}
+
+export interface ForecastPhasingWorkspaceRead {
+  generatedAt: string;
+  fromMonth: string;
+  toMonth: string;
+  rowMode: string;
+  scenarioKey?: string;
+  filterOptions: ForecastPhasingFilterOptions;
+  months: string[];
+  rows: ForecastPhasingRowRead[];
+  monthTotals: ForecastPhasingMonthTotalRead[];
+  statusMonthTotals: ForecastPhasingStatusMonthTotalRead[];
+  recentChanges?: ForecastPhasingChangeRead[];
 }
 
 export interface ForecastPolicySummary {
@@ -887,6 +1115,80 @@ export interface ForecastRecalculateResponse {
   status: string;
   forecastVersionId?: string | null;
   message: string;
+}
+
+export interface ForecastRevenueDashboardSection {
+  currencyCode: string;
+  months: string[];
+  monthlyStatusTotals: ForecastRevenueMonthStatusPoint[];
+  overallStatusTotals: ForecastRevenueStatusTotal[];
+  projectRows: ForecastRevenueProjectRow[];
+}
+
+export interface ForecastRevenueDisciplineRow {
+  disciplineId: string;
+  disciplineName: string;
+  basePhasingProfile: string;
+  forecastMethod: string;
+  lineCount: number;
+  manualOverrideLineCount: number;
+  totalAmount: number;
+  weightedTotalAmount: number;
+  monthValues: ForecastRevenueProjectMonthValue[];
+}
+
+export interface ForecastRevenueMonthStatusPoint {
+  month: string;
+  bidAmount: number;
+  weightedBidAmount: number;
+  awardedAmount: number;
+  activeAmount: number;
+  completeAmount: number;
+  bookedAmount: number;
+  lostAmount: number;
+}
+
+export interface ForecastRevenueProjectMonthValue {
+  month: string;
+  amount: number;
+  weightedAmount: number;
+  actualAmount?: number | null;
+  bookedAmount?: number | null;
+}
+
+export interface ForecastRevenueProjectRow {
+  projectId: string;
+  projectName: string;
+  clientId: string;
+  clientName: string;
+  status: string;
+  quoteEntryDate?: string | null;
+  executionStartDate?: string | null;
+  executionEndDate?: string | null;
+  quoteToExecutionLeadMonths?: number | null;
+  spanningMonthCount: number;
+  basePhasingProfile: string;
+  forecastMethod: string;
+  manualOverrideLineCount: number;
+  totalRevenue: number;
+  windowRevenue: number;
+  weightedTotalRevenue: number;
+  windowWeightedRevenue: number;
+  forecastVersionId?: string | null;
+  forecastStatus?: string | null;
+  scenarioKey?: string | null;
+  changeSummary?: { [key: string]: unknown; } | null;
+  explanationSummary?: { [key: string]: unknown; } | null;
+  monthValues: ForecastRevenueProjectMonthValue[];
+  disciplineRows: ForecastRevenueDisciplineRow[];
+}
+
+export interface ForecastRevenueStatusTotal {
+  status: string;
+  label: string;
+  projectCount: number;
+  totalAmount: number;
+  weightedTotalAmount: number;
 }
 
 export interface ForecastSanityCheckRead {
@@ -1143,7 +1445,9 @@ export interface OperationalDashboardResponse {
   filterOptions: DashboardFilterOptions;
   summaryCards: DashboardSummaryCard[];
   salesPipeline: SalesPipelineSection;
+  forecastDataset: DashboardForecastDatasetContractRead;
   monthlyRevenueForecast: MonthlyRevenueForecastSection;
+  forecastRevenue: ForecastRevenueDashboardSection;
   awardedLostTrend: AwardedLostTrendSection;
   quoteActualVariance: QuoteActualVarianceSection;
   clientProjectHistory: ClientProjectHistorySection;
@@ -1353,6 +1657,7 @@ export interface PredictionScenarioRead {
   updatedAt?: string | null;
   assumptionOverrides?: { [key: string]: unknown; };
   likelyQuoteRange?: PredictiveQuoteGuidance | null;
+  spendSummary?: PredictiveSpendSummary | null;
   disciplineUsage?: PredictiveDisciplineUsage[];
   monthlyRevenueSpread?: PredictiveMonthlyRevenueSpread[];
   overrunRisk: OverrunRiskSummary;
@@ -1391,6 +1696,19 @@ export interface PredictionWinProbabilityFactor {
   label: string;
   effect: number;
   detail: string;
+}
+
+export interface PredictiveDisciplineSpend {
+  disciplineId: string;
+  disciplineCode?: string | null;
+  disciplineName?: string | null;
+  currentActualCost?: number;
+  predictedTotalCost?: number | null;
+  predictedRemainingCost?: number | null;
+  costSharePct?: number;
+  confidence: string;
+  sampleSize?: number;
+  reasoning?: string[];
 }
 
 export interface PredictiveDisciplineUsage {
@@ -1453,6 +1771,19 @@ export interface PredictiveQuoteGuidance {
   omittedDisciplineIds?: string[];
   acceptanceStatus?: string | null;
   reasoning: string[];
+}
+
+export interface PredictiveSpendSummary {
+  currentActualCost?: number;
+  predictedTotalCost?: number | null;
+  predictedRemainingCost?: number | null;
+  impliedMarginAmount?: number | null;
+  impliedMarginPct?: number | null;
+  confidence: string;
+  confidenceScore: number;
+  fallbackTier: string;
+  basis: string;
+  disciplineSpend?: PredictiveDisciplineSpend[];
 }
 
 export interface PresignUploadRequest {
@@ -1536,6 +1867,11 @@ export interface ProjectCreateRequest {
   startDate?: string | null;
   endDate?: string | null;
   bidDueDate?: string | null;
+  estimatedExecutionStartDate?: string | null;
+  estimatedExecutionEndDate?: string | null;
+  revenueAllocationMethod?: RevenueAllocationMethod;
+  cadenceProfileType?: string | null;
+  cadenceProfileData?: { [key: string]: unknown; } | null;
 }
 
 export interface ProjectDisciplineRead {
@@ -1689,6 +2025,11 @@ export interface ProjectRead {
   startDate?: string | null;
   endDate?: string | null;
   bidDueDate?: string | null;
+  estimatedExecutionStartDate?: string | null;
+  estimatedExecutionEndDate?: string | null;
+  revenueAllocationMethod?: RevenueAllocationMethod;
+  cadenceProfileType?: string | null;
+  cadenceProfileData?: { [key: string]: unknown; } | null;
   bidSubmittedAt?: string | null;
   awardedAt?: string | null;
   lostAt?: string | null;
@@ -1767,6 +2108,11 @@ export interface ProjectUpdateRequest {
   startDate?: string | null;
   endDate?: string | null;
   bidDueDate?: string | null;
+  estimatedExecutionStartDate?: string | null;
+  estimatedExecutionEndDate?: string | null;
+  revenueAllocationMethod?: RevenueAllocationMethod | null;
+  cadenceProfileType?: string | null;
+  cadenceProfileData?: { [key: string]: unknown; } | null;
   bidSubmittedAt?: string | null;
   awardedAt?: string | null;
   lostAt?: string | null;
@@ -2068,6 +2414,8 @@ export interface RejectQuoteIngestionRunRequest {
 export interface RerunQuoteIngestionRunRequest {
   parserProfile?: string | null;
 }
+
+export type RevenueAllocationMethod = "cadence_profile";
 
 export interface RevenueMonthPoint {
   month: string;

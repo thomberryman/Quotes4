@@ -24,7 +24,7 @@ from app.models import (
     ProjectScheduleRange,
     User,
 )
-from app.models.enums import ProjectOutcomeType, ProjectStatus
+from app.models.enums import ProjectOutcomeType, ProjectStatus, RevenueAllocationMethod
 from app.modules.audit.service import audit_service
 from app.modules.comparables.benchmark_summary import build_benchmark_summary
 from app.modules.projects.schemas import (
@@ -99,7 +99,20 @@ class ProjectsService:
     ) -> ProjectRead:
         self._ensure_project_code_available(session, payload.code)
         self._validate_project_dates(payload.start_date, payload.end_date)
+        self._validate_execution_dates(
+            payload.estimated_execution_start_date,
+            payload.estimated_execution_end_date,
+        )
         self._require_user(session, payload.bid_owner_user_id)
+        (
+            revenue_allocation_method,
+            cadence_profile_type,
+            cadence_profile_data,
+        ) = self._normalize_phasing_configuration(
+            revenue_allocation_method=payload.revenue_allocation_method,
+            cadence_profile_type=payload.cadence_profile_type,
+            cadence_profile_data=payload.cadence_profile_data,
+        )
         project = Project(
             code=payload.code,
             name=payload.name,
@@ -112,6 +125,11 @@ class ProjectsService:
             start_date=payload.start_date,
             end_date=payload.end_date,
             bid_due_date=payload.bid_due_date,
+            estimated_execution_start_date=payload.estimated_execution_start_date,
+            estimated_execution_end_date=payload.estimated_execution_end_date,
+            revenue_allocation_method=revenue_allocation_method,
+            cadence_profile_type=cadence_profile_type,
+            cadence_profile_data_json=cadence_profile_data,
             created_by_id=actor_id,
             updated_by_id=actor_id,
         )
@@ -149,6 +167,41 @@ class ProjectsService:
             payload.end_date if "end_date" in payload.model_fields_set else project.end_date
         )
         self._validate_project_dates(next_start_date, next_end_date)
+        next_execution_start_date = (
+            payload.estimated_execution_start_date
+            if "estimated_execution_start_date" in payload.model_fields_set
+            else project.estimated_execution_start_date
+        )
+        next_execution_end_date = (
+            payload.estimated_execution_end_date
+            if "estimated_execution_end_date" in payload.model_fields_set
+            else project.estimated_execution_end_date
+        )
+        self._validate_execution_dates(next_execution_start_date, next_execution_end_date)
+        next_revenue_allocation_method = (
+            payload.revenue_allocation_method
+            if "revenue_allocation_method" in payload.model_fields_set
+            else project.revenue_allocation_method
+        )
+        next_cadence_profile_type = (
+            payload.cadence_profile_type
+            if "cadence_profile_type" in payload.model_fields_set
+            else project.cadence_profile_type
+        )
+        next_cadence_profile_data = (
+            payload.cadence_profile_data
+            if "cadence_profile_data" in payload.model_fields_set
+            else project.cadence_profile_data_json
+        )
+        (
+            normalized_revenue_allocation_method,
+            normalized_cadence_profile_type,
+            normalized_cadence_profile_data,
+        ) = self._normalize_phasing_configuration(
+            revenue_allocation_method=next_revenue_allocation_method,
+            cadence_profile_type=next_cadence_profile_type,
+            cadence_profile_data=next_cadence_profile_data,
+        )
         if "code" in payload.model_fields_set:
             self._ensure_project_code_available(session, payload.code, project.id)
             project.code = payload.code
@@ -165,6 +218,8 @@ class ProjectsService:
             "start_date",
             "end_date",
             "bid_due_date",
+            "estimated_execution_start_date",
+            "estimated_execution_end_date",
             "bid_submitted_at",
             "awarded_at",
             "lost_at",
@@ -174,6 +229,14 @@ class ProjectsService:
         ):
             if field in payload.model_fields_set:
                 setattr(project, field, getattr(payload, field))
+        if {
+            "revenue_allocation_method",
+            "cadence_profile_type",
+            "cadence_profile_data",
+        } & set(payload.model_fields_set):
+            project.revenue_allocation_method = normalized_revenue_allocation_method
+            project.cadence_profile_type = normalized_cadence_profile_type
+            project.cadence_profile_data_json = normalized_cadence_profile_data
         project.updated_by_id = actor_id
         session.flush()
         audit_service.record(
@@ -192,6 +255,11 @@ class ProjectsService:
             "pipeline_stage_key",
             "start_date",
             "end_date",
+            "estimated_execution_start_date",
+            "estimated_execution_end_date",
+            "revenue_allocation_method",
+            "cadence_profile_type",
+            "cadence_profile_data",
         } & set(payload.model_fields_set):
             from app.modules.forecasts.service import forecast_service
 
@@ -534,6 +602,11 @@ class ProjectsService:
             start_date=project.start_date,
             end_date=project.end_date,
             bid_due_date=project.bid_due_date,
+            estimated_execution_start_date=project.estimated_execution_start_date,
+            estimated_execution_end_date=project.estimated_execution_end_date,
+            revenue_allocation_method=project.revenue_allocation_method,
+            cadence_profile_type=project.cadence_profile_type,
+            cadence_profile_data=project.cadence_profile_data_json,
             bid_submitted_at=project.bid_submitted_at,
             awarded_at=project.awarded_at,
             lost_at=project.lost_at,
@@ -750,6 +823,42 @@ class ProjectsService:
                 "Project end date cannot be earlier than start date.",
                 "Invalid Project Dates",
             )
+
+    def _validate_execution_dates(
+        self,
+        estimated_execution_start_date: date | None,
+        estimated_execution_end_date: date | None,
+    ) -> None:
+        if (
+            estimated_execution_start_date is not None
+            and estimated_execution_end_date is not None
+            and estimated_execution_end_date < estimated_execution_start_date
+        ):
+            raise ApiProblemException(
+                422,
+                "Estimated execution end date cannot be earlier than estimated execution start date.",
+                "Invalid Project Dates",
+            )
+
+    def _normalize_phasing_configuration(
+        self,
+        *,
+        revenue_allocation_method: RevenueAllocationMethod | None,
+        cadence_profile_type: str | None,
+        cadence_profile_data: dict[str, object] | None,
+    ) -> tuple[RevenueAllocationMethod, str | None, dict[str, object] | None]:
+        normalized_method = revenue_allocation_method or RevenueAllocationMethod.cadence_profile
+        normalized_profile_type = cadence_profile_type
+        normalized_profile_data = cadence_profile_data
+
+        if normalized_method == RevenueAllocationMethod.cadence_profile:
+            return (
+                normalized_method,
+                normalized_profile_type,
+                normalized_profile_data,
+            )
+
+        return (normalized_method, None, None)
 
     def _require_company(self, session: Session, company_id: str) -> Company:
         company = session.get(Company, company_id)

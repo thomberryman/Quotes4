@@ -59,10 +59,14 @@ describe("form validation helpers", () => {
       validateProjectCreateForm({
         name: "",
         code: "",
+        cadenceProfileType: "",
         description: "",
         status: "bid",
         quoteCurrencyCode: "",
         bidDueDate: "",
+        estimatedExecutionEndDate: "",
+        estimatedExecutionStartDate: "",
+        revenueAllocationMethod: "cadence_profile",
         startDate: "",
         endDate: ""
       })
@@ -72,10 +76,14 @@ describe("form validation helpers", () => {
       validateProjectCreateForm({
         name: "Manual Intake",
         code: "",
+        cadenceProfileType: "",
         description: "",
         status: "bid",
         quoteCurrencyCode: "GB",
         bidDueDate: "",
+        estimatedExecutionEndDate: "",
+        estimatedExecutionStartDate: "",
+        revenueAllocationMethod: "cadence_profile",
         startDate: "",
         endDate: ""
       })
@@ -85,10 +93,14 @@ describe("form validation helpers", () => {
       validateProjectCreateForm({
         name: "Manual Intake",
         code: "",
+        cadenceProfileType: "",
         description: "",
         status: "bid",
         quoteCurrencyCode: "GBP",
         bidDueDate: "",
+        estimatedExecutionEndDate: "",
+        estimatedExecutionStartDate: "",
+        revenueAllocationMethod: "cadence_profile",
         startDate: "2026-04-10",
         endDate: "2026-04-01"
       })
@@ -98,10 +110,50 @@ describe("form validation helpers", () => {
       validateProjectCreateForm({
         name: "Manual Intake",
         code: "",
+        cadenceProfileType: "",
         description: "",
         status: "bid",
         quoteCurrencyCode: "GBP",
         bidDueDate: "",
+        estimatedExecutionEndDate: "2026-05-01",
+        estimatedExecutionStartDate: "2026-05-10",
+        revenueAllocationMethod: "cadence_profile",
+        startDate: "2026-04-01",
+        endDate: "2026-04-10"
+      })
+    ).toBe(
+      "Estimated execution end date cannot be earlier than estimated execution start date."
+    );
+
+    expect(
+      validateProjectCreateForm({
+        name: "Manual Intake",
+        code: "",
+        cadenceProfileType: "",
+        description: "",
+        status: "bid",
+        quoteCurrencyCode: "GBP",
+        bidDueDate: "",
+        estimatedExecutionEndDate: "2026-05-10",
+        estimatedExecutionStartDate: "2026-05-01",
+        revenueAllocationMethod: "cadence_profile",
+        startDate: "2026-04-01",
+        endDate: "2026-04-10"
+      })
+    ).toBeNull();
+
+    expect(
+      validateProjectCreateForm({
+        name: "Manual Intake",
+        code: "",
+        cadenceProfileType: "front_loaded",
+        description: "",
+        status: "bid",
+        quoteCurrencyCode: "GBP",
+        bidDueDate: "",
+        estimatedExecutionEndDate: "2026-05-10",
+        estimatedExecutionStartDate: "2026-05-01",
+        revenueAllocationMethod: "cadence_profile",
         startDate: "2026-04-01",
         endDate: "2026-04-10"
       })

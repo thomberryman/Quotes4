@@ -1,10 +1,54 @@
 import path from "node:path";
 
 import type { NextConfig } from "next";
-import type { Compiler, Configuration, sources, WebpackPluginInstance } from "webpack";
 
-class MirrorServerChunkAssetsPlugin implements WebpackPluginInstance {
-  apply(compiler: Compiler) {
+type NextWebpackConfig = Exclude<NextConfig["webpack"], null | undefined>;
+
+type ChunkAsset = {
+  name: string;
+  source: unknown;
+};
+
+type CompilationLike = {
+  hooks: {
+    processAssets: {
+      tap(
+        options: { name: string; stage: number },
+        callback: () => void,
+      ): void;
+    };
+  };
+  getAssets(): ChunkAsset[];
+  getAsset(name: string): ChunkAsset | undefined;
+  emitAsset(name: string, source: unknown): void;
+};
+
+type CompilerLike = {
+  webpack: {
+    Compilation: {
+      PROCESS_ASSETS_STAGE_ADDITIONS: number;
+    };
+  };
+  hooks: {
+    thisCompilation: {
+      tap(
+        name: string,
+        callback: (compilation: CompilationLike) => void,
+      ): void;
+    };
+  };
+};
+
+type WebpackPluginLike = {
+  apply(compiler: CompilerLike): void;
+};
+
+type WebpackConfigLike = {
+  plugins?: WebpackPluginLike[];
+};
+
+class MirrorServerChunkAssetsPlugin implements WebpackPluginLike {
+  apply(compiler: CompilerLike) {
     const { Compilation } = compiler.webpack;
 
     compiler.hooks.thisCompilation.tap(
@@ -28,10 +72,7 @@ class MirrorServerChunkAssetsPlugin implements WebpackPluginInstance {
 
               // Next's server runtime requires sibling chunk files from `.next/server`.
               // Mirror chunk assets into the server root so page-data collection can load them.
-              compilation.emitAsset(
-                mirroredName,
-                asset.source as sources.Source,
-              );
+              compilation.emitAsset(mirroredName, asset.source);
             });
           },
         );
@@ -40,18 +81,25 @@ class MirrorServerChunkAssetsPlugin implements WebpackPluginInstance {
   }
 }
 
-const nextConfig: NextConfig = {
+function configureWebpack<T extends WebpackConfigLike>(
+  config: T,
+  { isServer }: { isServer: boolean },
+): T {
+  if (!isServer) {
+    return config;
+  }
+
+  const plugins = config.plugins ? [...config.plugins] : [];
+  plugins.push(new MirrorServerChunkAssetsPlugin());
+  config.plugins = plugins;
+
+  return config;
+}
+
+const nextConfig = {
   typedRoutes: false,
   transpilePackages: ["@quotes4/contracts", "@quotes4/domain"],
-  webpack: (config: Configuration, { isServer }) => {
-    if (isServer) {
-      const plugins = config.plugins ?? [];
-      plugins.push(new MirrorServerChunkAssetsPlugin());
-      config.plugins = plugins;
-    }
-
-    return config;
-  },
-};
+  webpack: configureWebpack as NextWebpackConfig,
+} satisfies NextConfig;
 
 export default nextConfig;

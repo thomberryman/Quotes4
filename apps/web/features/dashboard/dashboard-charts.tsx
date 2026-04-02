@@ -157,6 +157,13 @@ export function RevenueLineChart({
   const highValues = months.map((month) => month.highAmount ?? month.grossAmount);
   const actualValues = months.map((month) => month.actualAmount ?? 0);
   const hasActuals = actualValues.some((value) => value > 0);
+  const hasWeightedValues = weightedValues.some((value) => Math.abs(value) > 0.005);
+  const hasRangeBand = months.some(
+    (month) =>
+      month.lowAmount != null ||
+      month.highAmount != null,
+  );
+  const useSingleSeries = !hasActuals && !hasWeightedValues && !hasRangeBand;
   const maxValue = getMaxValue([
     ...grossValues,
     ...weightedValues,
@@ -183,17 +190,21 @@ export function RevenueLineChart({
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 text-xs text-slate-500">
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-sky-100" />
-          Expected range
+          <span className={`h-2.5 w-2.5 rounded-full ${useSingleSeries ? "bg-slate-900" : "bg-sky-500"}`} />
+          {useSingleSeries ? "Forecast total" : "Gross forecast"}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
-          Gross forecast
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-900" />
-          Weighted forecast
-        </div>
+        {useSingleSeries ? null : (
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-sky-100" />
+            Expected range
+          </div>
+        )}
+        {useSingleSeries ? null : (
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-slate-900" />
+            Weighted forecast
+          </div>
+        )}
         {hasActuals ? (
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -235,27 +246,31 @@ export function RevenueLineChart({
             );
           })}
 
-          <polygon
-            fill="#e0f2fe"
-            opacity="0.7"
-            points={confidenceBandPoints}
-          />
+          {useSingleSeries ? null : (
+            <polygon
+              fill="#e0f2fe"
+              opacity="0.7"
+              points={confidenceBandPoints}
+            />
+          )}
           <polyline
             fill="none"
             points={grossPoints}
-            stroke="#0ea5e9"
+            stroke={useSingleSeries ? "#0f172a" : "#0ea5e9"}
             strokeLinejoin="round"
             strokeLinecap="round"
             strokeWidth="3"
           />
-          <polyline
-            fill="none"
-            points={weightedPoints}
-            stroke="#0f172a"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            strokeWidth="3"
-          />
+          {useSingleSeries ? null : (
+            <polyline
+              fill="none"
+              points={weightedPoints}
+              stroke="#0f172a"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              strokeWidth="3"
+            />
+          )}
           {hasActuals ? (
             <polyline
               fill="none"

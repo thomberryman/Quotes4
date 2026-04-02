@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ApiProblemException
 from app.models import (
+    Discipline,
     Forecast,
     ForecastVersion,
     Project,
@@ -42,6 +43,12 @@ from app.modules.dashboards.schemas import (
     DisciplineRevenueTrendsSection,
     DisciplineTrendPoint,
     ForecastConfidenceSection,
+    ForecastRevenueDashboardSection,
+    ForecastRevenueDisciplineRow,
+    ForecastRevenueMonthStatusPoint,
+    ForecastRevenueProjectMonthValue,
+    ForecastRevenueProjectRow,
+    ForecastRevenueStatusTotal,
     MonthlyRevenueForecastSection,
     OperationalDashboardResponse,
     PipelineStageSummary,
@@ -137,6 +144,28 @@ class DisciplineMonthRecord:
 
 
 @dataclass(frozen=True)
+class ProjectMonthRecord:
+    month: str
+    gross_amount: float
+    weighted_amount: float
+    actual_amount: float
+    booked_amount: float
+
+
+@dataclass(frozen=True)
+class DisciplineDetailRecord:
+    discipline_id: str
+    discipline_name: str
+    base_phasing_profile: str
+    forecast_method: str
+    line_count: int
+    manual_override_line_count: int
+    total_amount: float
+    weighted_total_amount: float
+    month_values: tuple[ProjectMonthRecord, ...]
+
+
+@dataclass(frozen=True)
 class OutcomeRecord:
     outcome_type: str
     effective_at: str
@@ -155,6 +184,8 @@ class DashboardProjectRecord:
     outcomes: tuple[OutcomeRecord, ...]
     disciplines: tuple[str, ...]
     monthly_values: tuple[DisciplineMonthRecord, ...]
+    forecast_total_amount: float = 0.0
+    forecast_weighted_total_amount: float = 0.0
     benchmark: BenchmarkRecord | None = None
     currency_code: str = "GBP"
     forecast_version_id: str | None = None
@@ -163,6 +194,17 @@ class DashboardProjectRecord:
     forecast_confidence_score: float | None = None
     data_sufficiency_score: float | None = None
     fallback_tier: str | None = None
+    project_monthly_values: tuple[ProjectMonthRecord, ...] = ()
+    discipline_details: tuple[DisciplineDetailRecord, ...] = ()
+    base_phasing_profile: str = "flat_equal"
+    forecast_method: str = "none"
+    manual_override_line_count: int = 0
+    quote_entry_date: str | None = None
+    execution_start_date: str | None = None
+    execution_end_date: str | None = None
+    quote_to_execution_lead_months: int | None = None
+    change_summary: dict[str, object] | None = None
+    explanation_summary: dict[str, object] | None = None
 
     @property
     def weighted_value(self) -> float:
@@ -173,10 +215,24 @@ class DashboardProjectRecord:
         return round(sum(item.booked_amount for item in self.monthly_values), 2)
 
     @property
+    def commercial_weighted_value(self) -> float:
+        return round(self.quote_amount * (self.probability_percent / 100), 2)
+
+    @property
+    def commercial_booked_value(self) -> float:
+        if self.status not in BOOKED_STATUSES:
+            return 0.0
+        return round(self.quote_amount, 2)
+
+    @property
     def actuals_status(self) -> str:
         if self.benchmark is None:
             return "none"
         return self.benchmark.actuals_status
+
+    @property
+    def spanning_month_count(self) -> int:
+        return len([item for item in self.project_monthly_values if item.gross_amount > 0])
 
 
 @dataclass(frozen=True)
@@ -460,14 +516,33 @@ class DashboardService:
             status=status,
             scenario_key=scenario_key,
         )
-        projects = self._filtered_projects(session, filters)
+        forecast_dataset = forecast_service.get_dashboard_forecast_dataset(
+            session,
+            from_month=filters.from_month,
+            to_month=filters.to_month,
+            client_id=filters.client_id,
+            project_id=filters.project_id,
+            discipline_id=filters.discipline_id,
+            status=filters.status,
+            scenario_key=filters.scenario_key,
+        )
+        forecast_dataset_contract = forecast_service.to_dashboard_forecast_contract_dataset(
+            forecast_dataset
+        )
+        projects = self._filtered_projects(
+            session,
+            filters,
+            forecast_dataset=forecast_dataset,
+        )
         return OperationalDashboardResponse(
             generated_at=datetime.now(UTC),
             applied_filters=DashboardAppliedFilters(**filters.__dict__),
             filter_options=self._build_filter_options(session),
             summary_cards=self._build_summary_cards(projects, filters),
             sales_pipeline=self._build_sales_pipeline(projects),
+            forecast_dataset=forecast_dataset_contract,
             monthly_revenue_forecast=self._build_monthly_revenue_forecast(projects, filters),
+            forecast_revenue=self._build_forecast_revenue(projects, filters),
             awarded_lost_trend=self._build_awarded_lost_trend(projects, filters),
             quote_actual_variance=self._build_quote_actual_variance(projects),
             client_project_history=self._build_client_project_history(projects),
@@ -498,7 +573,21 @@ class DashboardService:
             status=status,
             scenario_key=scenario_key,
         )
-        projects = self._filtered_projects(session, filters)
+        forecast_dataset = forecast_service.get_dashboard_forecast_dataset(
+            session,
+            from_month=filters.from_month,
+            to_month=filters.to_month,
+            client_id=filters.client_id,
+            project_id=filters.project_id,
+            discipline_id=filters.discipline_id,
+            status=filters.status,
+            scenario_key=filters.scenario_key,
+        )
+        projects = self._filtered_projects(
+            session,
+            filters,
+            forecast_dataset=forecast_dataset,
+        )
 
         if view == "sales_pipeline":
             return self._build_sales_pipeline_drilldown(projects)
@@ -528,23 +617,34 @@ class DashboardService:
         return buffer.getvalue()
 
     def _build_filter_options(self, session: Session) -> DashboardFilterOptions:
-        projects = self._load_dashboard_projects(session, scenario_key=None)
+        project_entities = list(
+            session.scalars(
+                select(Project).options(
+                    selectinload(Project.parties).selectinload(ProjectParty.company),
+                    selectinload(Project.disciplines).selectinload(ProjectDiscipline.discipline),
+                )
+            )
+        )
         clients = sorted(
-            {(project.client_id, project.client_name) for project in projects},
+            {
+                self._resolve_client(project)
+                for project in project_entities
+            },
             key=lambda item: item[1],
         )
         project_options = sorted(
-            ((project.id, project.name) for project in projects),
+            ((project.id, project.name) for project in project_entities),
             key=lambda item: item[1],
         )
         disciplines = sorted(
             {
                 (
                     item.discipline_id,
-                    item.discipline_name,
+                    item.discipline.name,
                 )
-                for project in projects
-                for item in project.monthly_values
+                for project in project_entities
+                for item in project.disciplines
+                if item.discipline_id is not None and item.discipline is not None
             },
             key=lambda item: item[1],
         )
@@ -607,7 +707,7 @@ class DashboardService:
         self,
         session: Session,
         *,
-        scenario_key: str | None,
+        forecast_dataset,
     ) -> list[DashboardProjectRecord]:
         project_entities = list(
             session.scalars(
@@ -616,23 +716,25 @@ class DashboardService:
                     selectinload(Project.outcomes),
                     selectinload(Project.disciplines).selectinload(ProjectDiscipline.discipline),
                     selectinload(Project.quotes).selectinload(Quote.versions),
-                    selectinload(Project.forecast).selectinload(Forecast.versions),
                     selectinload(Project.benchmark_summary)
                     .selectinload(ProjectBenchmarkSummary.discipline_summaries)
                     .selectinload(ProjectBenchmarkDisciplineSummary.discipline),
                 )
             )
         )
+        forecast_projects = {
+            project.project_id: project
+            for project in forecast_dataset.projects
+        }
         records: list[DashboardProjectRecord] = []
         for project in project_entities:
-            selected_version = self._select_forecast_version(project, scenario_key=scenario_key)
-            if scenario_key not in {None, "base"} and selected_version is None:
+            forecast_project = forecast_projects.get(project.id)
+            if forecast_project is None:
                 continue
             records.append(
                 self._to_dashboard_project_record(
-                    session,
                     project,
-                    selected_version=selected_version,
+                    forecast_project=forecast_project,
                 )
             )
         return records
@@ -641,8 +743,13 @@ class DashboardService:
         self,
         session: Session,
         filters: DashboardFilters,
+        *,
+        forecast_dataset,
     ) -> list[DashboardProjectRecord]:
-        items = self._load_dashboard_projects(session, scenario_key=filters.scenario_key)
+        items = self._load_dashboard_projects(
+            session,
+            forecast_dataset=forecast_dataset,
+        )
         if filters.client_id is not None:
             items = [project for project in items if project.client_id == filters.client_id]
         if filters.project_id is not None:
@@ -729,57 +836,251 @@ class DashboardService:
             )
         return 0.0, project.quote_currency_code or "GBP"
 
-    def _to_dashboard_project_record(
-        self,
-        session: Session,
-        project: Project,
-        *,
-        selected_version: ForecastVersion | None,
-    ) -> DashboardProjectRecord:
-        client_id, client_name = self._resolve_client(project)
-        quote_total, currency_code = self._resolve_quote_total(project)
-        version_read = (
-            forecast_service.get_version(session, selected_version.id)
-            if selected_version is not None
-            else None
-        )
-        effective_quote_amount = version_read.total_amount if version_read is not None else quote_total
-        effective_probability = (
-            version_read.probability_percent
-            if version_read is not None
-            else 100.0
-            if project.status.value in BOOKED_STATUSES
-            else 0.0
-            if project.status.value == "lost"
-            else 100.0
-        )
-        discipline_lookup = {
-            item.discipline_id: (
-                item.discipline.code,
-                item.discipline.name,
+    def _month_window(self, filters: DashboardFilters) -> list[str]:
+        months: list[str] = []
+        current = self._parse_month(filters.from_month)
+        end = self._parse_month(filters.to_month)
+        while current <= end:
+            months.append(f"{current.year:04d}-{current.month:02d}")
+            current = self._parse_month(self._offset_month(current, 1))
+        return months
+
+    def _month_end(self, value: str) -> date:
+        start = self._parse_month(value)
+        next_month = self._parse_month(self._offset_month(start, 1))
+        return date.fromordinal(next_month.toordinal() - 1)
+
+    def _summarize_method_values(self, values: set[str]) -> str:
+        normalized = {value for value in values if value}
+        if not normalized:
+            return "none"
+        if len(normalized) == 1:
+            return next(iter(normalized))
+        return "mixed"
+
+    def _resolve_quote_entry_date(self, project: Project) -> str | None:
+        issued_dates: list[date] = []
+        for quote in project.quotes:
+            current_version = next(
+                (item for item in quote.versions if item.id == quote.current_version_id),
+                None,
             )
-            for item in project.disciplines
-            if item.discipline_id is not None and item.discipline is not None
-        }
-        monthly_values = tuple(
-            DisciplineMonthRecord(
+            if current_version is None:
+                continue
+            if current_version.issued_at is not None:
+                issued_dates.append(current_version.issued_at.date())
+            elif current_version.source_document_date is not None:
+                issued_dates.append(current_version.source_document_date)
+            else:
+                issued_dates.append(current_version.created_at.date())
+        if issued_dates:
+            return max(issued_dates).isoformat()
+        if project.bid_submitted_at is not None:
+            return project.bid_submitted_at.date().isoformat()
+        return None
+
+    def _resolve_execution_window(
+        self,
+        project: Project,
+        project_monthly_values: tuple[ProjectMonthRecord, ...],
+    ) -> tuple[str | None, str | None]:
+        return forecast_service.resolve_execution_window(
+            project,
+            month_values=[item.month for item in project_monthly_values if item.gross_amount > 0],
+        )
+
+    def _months_between(
+        self,
+        start_value: str | None,
+        end_value: str | None,
+    ) -> int | None:
+        if start_value is None or end_value is None:
+            return None
+        start = date.fromisoformat(start_value)
+        end = date.fromisoformat(end_value)
+        return (end.year - start.year) * 12 + (end.month - start.month)
+
+    def _build_project_monthly_values(
+        self,
+        version_read,
+        *,
+        project_status: str,
+    ) -> tuple[ProjectMonthRecord, ...]:
+        if version_read is None:
+            return ()
+        return tuple(
+            ProjectMonthRecord(
                 month=item.month,
-                discipline_id=discipline_lookup.get(
-                    item.discipline_id,
-                    ("unassigned", "Unassigned"),
-                )[0],
-                discipline_name=discipline_lookup.get(
-                    item.discipline_id,
-                    ("unassigned", "Unassigned"),
-                )[1],
                 gross_amount=item.amount,
                 weighted_amount=item.weighted_amount,
-                low_amount=item.low_amount or item.amount,
-                high_amount=item.high_amount or item.amount,
                 actual_amount=item.actual_amount or 0.0,
-                booked_amount=item.amount if project.status.value in BOOKED_STATUSES else 0.0,
+                booked_amount=item.amount if project_status in BOOKED_STATUSES else 0.0,
             )
-            for item in (version_read.discipline_monthly_rollups if version_read is not None else [])
+            for item in version_read.project_monthly_rollups
+        )
+
+    def _build_discipline_details(
+        self,
+        version_read,
+        *,
+        project_status: str,
+        discipline_lookup: dict[str, tuple[str, str]],
+        base_phasing_profile: str,
+    ) -> tuple[DisciplineDetailRecord, ...]:
+        if version_read is None:
+            return ()
+
+        grouped: dict[str, dict[str, object]] = {}
+        for line in version_read.lines:
+            discipline_id, discipline_name = discipline_lookup.get(
+                line.discipline_id,
+                ("unassigned", "Unassigned"),
+            )
+            bucket = grouped.setdefault(
+                discipline_id,
+                {
+                    "discipline_name": discipline_name,
+                    "forecast_methods": set(),
+                    "line_count": 0,
+                    "manual_override_line_count": 0,
+                    "total_amount": 0.0,
+                    "weighted_total_amount": 0.0,
+                    "month_values": [],
+                },
+            )
+            forecast_methods = bucket["forecast_methods"]
+            if isinstance(forecast_methods, set):
+                forecast_methods.add(line.forecast_method_key or "unknown")
+            bucket["line_count"] = int(bucket["line_count"]) + 1
+            has_manual_override = line.allocation_method == "manual" or any(
+                allocation.allocation_source == "manual_override"
+                for allocation in line.allocations
+            )
+            if has_manual_override:
+                bucket["manual_override_line_count"] = (
+                    int(bucket["manual_override_line_count"]) + 1
+                )
+            bucket["total_amount"] = float(bucket["total_amount"]) + line.total_amount
+            bucket["weighted_total_amount"] = (
+                float(bucket["weighted_total_amount"]) + line.weighted_total_amount
+            )
+
+        for rollup in version_read.discipline_monthly_rollups:
+            discipline_id, discipline_name = discipline_lookup.get(
+                rollup.discipline_id,
+                ("unassigned", "Unassigned"),
+            )
+            bucket = grouped.setdefault(
+                discipline_id,
+                {
+                    "discipline_name": discipline_name,
+                    "forecast_methods": set(),
+                    "line_count": 0,
+                    "manual_override_line_count": 0,
+                    "total_amount": 0.0,
+                    "weighted_total_amount": 0.0,
+                    "month_values": [],
+                },
+            )
+            month_values = bucket["month_values"]
+            if isinstance(month_values, list):
+                month_values.append(
+                    ProjectMonthRecord(
+                        month=rollup.month,
+                        gross_amount=rollup.amount,
+                        weighted_amount=rollup.weighted_amount,
+                        actual_amount=rollup.actual_amount or 0.0,
+                        booked_amount=(
+                            rollup.amount if project_status in BOOKED_STATUSES else 0.0
+                        ),
+                    )
+                )
+
+        return tuple(
+            DisciplineDetailRecord(
+                discipline_id=discipline_id,
+                discipline_name=str(values["discipline_name"]),
+                base_phasing_profile=base_phasing_profile,
+                forecast_method=self._summarize_method_values(
+                    set(values["forecast_methods"])
+                ),
+                line_count=int(values["line_count"]),
+                manual_override_line_count=int(values["manual_override_line_count"]),
+                total_amount=round(float(values["total_amount"]), 2),
+                weighted_total_amount=round(float(values["weighted_total_amount"]), 2),
+                month_values=tuple(
+                    sorted(
+                        list(values["month_values"]),
+                        key=lambda item: item.month,
+                    )
+                ),
+            )
+            for discipline_id, values in sorted(
+                grouped.items(),
+                key=lambda item: (
+                    -float(item[1]["total_amount"]),
+                    str(item[1]["discipline_name"]),
+                ),
+            )
+        )
+
+    def _to_dashboard_project_record(
+        self,
+        project: Project,
+        *,
+        forecast_project,
+    ) -> DashboardProjectRecord:
+        client_id, client_name = self._resolve_client(project)
+        currency_code = project.quote_currency_code or "GBP"
+        quote_entry_date = self._resolve_quote_entry_date(project)
+        project_monthly_values = tuple(
+            ProjectMonthRecord(
+                month=item.month,
+                gross_amount=round(item.amount, 2),
+                weighted_amount=round(item.weighted_amount, 2),
+                actual_amount=round(item.actual_amount or 0.0, 2),
+                booked_amount=round(item.booked_amount or 0.0, 2),
+            )
+            for item in sorted(forecast_project.project_months, key=lambda value: value.month)
+        )
+        base_phasing_profile = forecast_project.base_phasing_profile or "system_default"
+        discipline_details = tuple(
+            DisciplineDetailRecord(
+                discipline_id=detail.discipline_id,
+                discipline_name=detail.discipline_name,
+                base_phasing_profile=base_phasing_profile,
+                forecast_method=detail.allocation_method_used,
+                line_count=detail.line_count,
+                manual_override_line_count=detail.manual_override_line_count,
+                total_amount=round(detail.total_amount, 2),
+                weighted_total_amount=round(detail.weighted_total_amount, 2),
+                month_values=tuple(
+                    ProjectMonthRecord(
+                        month=value.month,
+                        gross_amount=round(value.amount, 2),
+                        weighted_amount=round(value.weighted_amount, 2),
+                        actual_amount=round(value.actual_amount or 0.0, 2),
+                        booked_amount=round(value.booked_amount or 0.0, 2),
+                    )
+                    for value in sorted(detail.month_values, key=lambda item: item.month)
+                ),
+            )
+            for detail in forecast_project.discipline_rows
+        )
+        monthly_values = tuple(
+            DisciplineMonthRecord(
+                month=value.month,
+                discipline_id=detail.discipline_id,
+                discipline_name=detail.discipline_name,
+                gross_amount=round(value.gross_amount, 2),
+                weighted_amount=round(value.weighted_amount, 2),
+                low_amount=round(value.gross_amount, 2),
+                high_amount=round(value.gross_amount, 2),
+                actual_amount=round(value.actual_amount, 2),
+                booked_amount=round(value.booked_amount, 2),
+            )
+            for detail in discipline_details
+            for value in detail.month_values
         )
         benchmark = None
         if project.benchmark_summary is not None:
@@ -817,23 +1118,38 @@ class DashboardService:
         return DashboardProjectRecord(
             id=project.id,
             name=project.name,
-            client_id=client_id,
-            client_name=client_name,
+            client_id=forecast_project.client_id or client_id,
+            client_name=forecast_project.client_name or client_name,
             currency_code=currency_code,
-            status=project.status.value,
-            quote_amount=round(float(effective_quote_amount), 2),
-            probability_percent=round(float(effective_probability), 2),
-            forecast_version_id=selected_version.id if selected_version is not None else None,
-            forecast_status=selected_version.status.value if selected_version is not None else None,
-            forecast_scenario_key=selected_version.scenario_key if selected_version is not None else None,
-            forecast_confidence_score=(
-                version_read.confidence_score if version_read is not None else None
+            status=forecast_project.operational_status,
+            quote_amount=round(float(forecast_project.total_project_value), 2),
+            forecast_total_amount=round(float(forecast_project.total_forecast_value), 2),
+            forecast_weighted_total_amount=round(
+                float(forecast_project.weighted_total_forecast_value),
+                2,
             ),
-            data_sufficiency_score=(
-                version_read.data_sufficiency_score if version_read is not None else None
+            probability_percent=round(float(forecast_project.probability_percent), 2),
+            forecast_version_id=forecast_project.forecast_version_id,
+            forecast_status=forecast_project.forecast_status,
+            forecast_scenario_key=forecast_project.scenario_key,
+            forecast_confidence_score=forecast_project.confidence_score,
+            data_sufficiency_score=forecast_project.data_sufficiency_score,
+            fallback_tier=forecast_project.fallback_tier,
+            project_monthly_values=project_monthly_values,
+            discipline_details=discipline_details,
+            base_phasing_profile=base_phasing_profile,
+            forecast_method=forecast_project.allocation_method_used,
+            manual_override_line_count=forecast_project.manual_override_line_count,
+            quote_entry_date=quote_entry_date,
+            execution_start_date=forecast_project.execution_start_date,
+            execution_end_date=forecast_project.execution_end_date,
+            quote_to_execution_lead_months=self._months_between(
+                quote_entry_date,
+                forecast_project.execution_start_date,
             ),
-            fallback_tier=version_read.fallback_tier if version_read is not None else None,
-            issues=tuple(version_read.issues if version_read is not None else ("No forecast version.",)),
+            change_summary=forecast_project.change_summary,
+            explanation_summary=forecast_project.explanation_summary,
+            issues=tuple(forecast_project.issues),
             outcomes=tuple(
                 OutcomeRecord(
                     outcome_type=item.outcome_type.value,
@@ -940,16 +1256,28 @@ class DashboardService:
                     label=label,
                     project_count=len(stage_projects),
                     quote_amount=round(sum(project.quote_amount for project in stage_projects), 2),
-                    weighted_amount=round(sum(project.weighted_value for project in stage_projects), 2),
-                    booked_amount=round(sum(project.booked_value for project in stage_projects), 2),
+                    weighted_amount=round(
+                        sum(project.commercial_weighted_value for project in stage_projects),
+                        2,
+                    ),
+                    booked_amount=round(
+                        sum(project.commercial_booked_value for project in stage_projects),
+                        2,
+                    ),
                     currency_code=currency_code,
                 )
             )
         return SalesPipelineSection(
             currency_code=currency_code,
             total_quote_amount=round(sum(project.quote_amount for project in projects), 2),
-            total_weighted_amount=round(sum(project.weighted_value for project in projects), 2),
-            total_booked_amount=round(sum(project.booked_value for project in projects), 2),
+            total_weighted_amount=round(
+                sum(project.commercial_weighted_value for project in projects),
+                2,
+            ),
+            total_booked_amount=round(
+                sum(project.commercial_booked_value for project in projects),
+                2,
+            ),
             stages=stages,
         )
 
@@ -993,6 +1321,192 @@ class DashboardService:
         return MonthlyRevenueForecastSection(
             currency_code=self._currency_code(projects),
             months=months,
+        )
+
+    def _build_forecast_revenue(
+        self,
+        projects: list[DashboardProjectRecord],
+        filters: DashboardFilters,
+    ) -> ForecastRevenueDashboardSection:
+        months = self._month_window(filters)
+        monthly_status_totals: dict[str, dict[str, float]] = {
+            month: {
+                "bid": 0.0,
+                "weighted_bid": 0.0,
+                "awarded": 0.0,
+                "active": 0.0,
+                "complete": 0.0,
+                "booked": 0.0,
+                "lost": 0.0,
+            }
+            for month in months
+        }
+        overall_status_totals: dict[str, dict[str, object]] = {
+            status: {"project_ids": set(), "total_amount": 0.0, "weighted_total_amount": 0.0}
+            for status in STATUS_LABELS
+        }
+        project_rows: list[ForecastRevenueProjectRow] = []
+
+        for project in projects:
+            month_lookup = {item.month: item for item in project.project_monthly_values}
+            window_revenue = 0.0
+            window_weighted_revenue = 0.0
+
+            for month in months:
+                item = month_lookup.get(month)
+                if item is None:
+                    continue
+                window_revenue += item.gross_amount
+                window_weighted_revenue += item.weighted_amount
+                if project.status == "bid":
+                    monthly_status_totals[month]["bid"] += item.gross_amount
+                    monthly_status_totals[month]["weighted_bid"] += item.weighted_amount
+                elif project.status == "awarded":
+                    monthly_status_totals[month]["awarded"] += item.gross_amount
+                    monthly_status_totals[month]["booked"] += item.booked_amount
+                elif project.status == "active":
+                    monthly_status_totals[month]["active"] += item.gross_amount
+                    monthly_status_totals[month]["booked"] += item.booked_amount
+                elif project.status == "complete":
+                    monthly_status_totals[month]["complete"] += item.gross_amount
+                    monthly_status_totals[month]["booked"] += item.booked_amount
+                elif project.status == "lost":
+                    monthly_status_totals[month]["lost"] += item.gross_amount
+
+            status_bucket = overall_status_totals[project.status]
+            project_ids = status_bucket["project_ids"]
+            if isinstance(project_ids, set):
+                project_ids.add(project.id)
+            status_bucket["total_amount"] = (
+                float(status_bucket["total_amount"]) + window_revenue
+            )
+            status_bucket["weighted_total_amount"] = (
+                float(status_bucket["weighted_total_amount"]) + window_weighted_revenue
+            )
+
+            project_rows.append(
+                ForecastRevenueProjectRow(
+                    project_id=project.id,
+                    project_name=project.name,
+                    client_id=project.client_id,
+                    client_name=project.client_name,
+                    status=project.status,
+                    quote_entry_date=project.quote_entry_date,
+                    execution_start_date=project.execution_start_date,
+                    execution_end_date=project.execution_end_date,
+                    quote_to_execution_lead_months=project.quote_to_execution_lead_months,
+                    spanning_month_count=project.spanning_month_count,
+                    base_phasing_profile=project.base_phasing_profile,
+                    forecast_method=project.forecast_method,
+                    manual_override_line_count=project.manual_override_line_count,
+                    total_revenue=round(project.forecast_total_amount, 2),
+                    window_revenue=round(window_revenue, 2),
+                    weighted_total_revenue=round(project.forecast_weighted_total_amount, 2),
+                    window_weighted_revenue=round(window_weighted_revenue, 2),
+                    forecast_version_id=project.forecast_version_id,
+                    forecast_status=project.forecast_status,
+                    scenario_key=project.forecast_scenario_key or "base",
+                    change_summary=project.change_summary,
+                    explanation_summary=project.explanation_summary,
+                    month_values=[
+                        ForecastRevenueProjectMonthValue(
+                            month=month,
+                            amount=round(month_lookup.get(month).gross_amount, 2)
+                            if month_lookup.get(month) is not None
+                            else 0.0,
+                            weighted_amount=round(month_lookup.get(month).weighted_amount, 2)
+                            if month_lookup.get(month) is not None
+                            else 0.0,
+                            actual_amount=round(month_lookup.get(month).actual_amount, 2)
+                            if month_lookup.get(month) is not None
+                            else 0.0,
+                            booked_amount=round(month_lookup.get(month).booked_amount, 2)
+                            if month_lookup.get(month) is not None
+                            else 0.0,
+                        )
+                        for month in months
+                    ],
+                    discipline_rows=[
+                        ForecastRevenueDisciplineRow(
+                            discipline_id=detail.discipline_id,
+                            discipline_name=detail.discipline_name,
+                            base_phasing_profile=detail.base_phasing_profile,
+                            forecast_method=detail.forecast_method,
+                            line_count=detail.line_count,
+                            manual_override_line_count=detail.manual_override_line_count,
+                            total_amount=detail.total_amount,
+                            weighted_total_amount=detail.weighted_total_amount,
+                            month_values=[
+                                ForecastRevenueProjectMonthValue(
+                                    month=month,
+                                    amount=round(discipline_month_lookup.get(month).gross_amount, 2)
+                                    if discipline_month_lookup.get(month) is not None
+                                    else 0.0,
+                                    weighted_amount=round(
+                                        discipline_month_lookup.get(month).weighted_amount,
+                                        2,
+                                    )
+                                    if discipline_month_lookup.get(month) is not None
+                                    else 0.0,
+                                    actual_amount=round(
+                                        discipline_month_lookup.get(month).actual_amount,
+                                        2,
+                                    )
+                                    if discipline_month_lookup.get(month) is not None
+                                    else 0.0,
+                                    booked_amount=round(
+                                        discipline_month_lookup.get(month).booked_amount,
+                                        2,
+                                    )
+                                    if discipline_month_lookup.get(month) is not None
+                                    else 0.0,
+                                )
+                                for discipline_month_lookup in [
+                                    {value.month: value for value in detail.month_values}
+                                ]
+                                for month in months
+                            ],
+                        )
+                        for detail in project.discipline_details
+                    ],
+                )
+            )
+
+        project_rows.sort(
+            key=lambda item: (
+                item.execution_start_date or "9999-12-31",
+                item.client_name,
+                item.project_name,
+            )
+        )
+
+        return ForecastRevenueDashboardSection(
+            currency_code=self._currency_code(projects),
+            months=months,
+            monthly_status_totals=[
+                ForecastRevenueMonthStatusPoint(
+                    month=month,
+                    bid_amount=round(values["bid"], 2),
+                    weighted_bid_amount=round(values["weighted_bid"], 2),
+                    awarded_amount=round(values["awarded"], 2),
+                    active_amount=round(values["active"], 2),
+                    complete_amount=round(values["complete"], 2),
+                    booked_amount=round(values["booked"], 2),
+                    lost_amount=round(values["lost"], 2),
+                )
+                for month, values in monthly_status_totals.items()
+            ],
+            overall_status_totals=[
+                ForecastRevenueStatusTotal(
+                    status=status,
+                    label=STATUS_LABELS[status],
+                    project_count=len(values["project_ids"]) if isinstance(values["project_ids"], set) else 0,
+                    total_amount=round(float(values["total_amount"]), 2),
+                    weighted_total_amount=round(float(values["weighted_total_amount"]), 2),
+                )
+                for status, values in overall_status_totals.items()
+            ],
+            project_rows=project_rows,
         )
 
     def _build_awarded_lost_trend(
@@ -1244,7 +1758,7 @@ class DashboardService:
                 "clientName": project.client_name,
                 "status": STATUS_LABELS.get(project.status, project.status.title()),
                 "quoteTotal": round(project.quote_amount, 2),
-                "weightedValue": round(project.weighted_value, 2),
+                "weightedValue": round(project.commercial_weighted_value, 2),
                 "probabilityPercent": round(project.probability_percent, 2),
                 "lastStatusDate": project.outcomes[-1].effective_at if project.outcomes else None,
             }
@@ -1266,7 +1780,10 @@ class DashboardService:
             totals={
                 "projectCount": len(rows),
                 "quoteTotal": round(sum(project.quote_amount for project in projects), 2),
-                "weightedValue": round(sum(project.weighted_value for project in projects), 2),
+                "weightedValue": round(
+                    sum(project.commercial_weighted_value for project in projects),
+                    2,
+                ),
             },
         )
 

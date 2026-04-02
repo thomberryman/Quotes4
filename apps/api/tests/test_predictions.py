@@ -11,6 +11,7 @@ from app.models import (
     Company,
     Discipline,
     ForecastVersion,
+    MappedActual,
     Project,
     ProjectBenchmarkDisciplineSummary,
     ProjectBenchmarkSummary,
@@ -23,6 +24,8 @@ from app.models import (
 )
 from app.models.enums import (
     BenchmarkActualsStatus,
+    CetaRowFinancialType,
+    MappedActualChangeType,
     ProjectPartyRole,
     ProjectStatus,
     QuoteVersionStatus,
@@ -221,6 +224,39 @@ def _add_project(
         )
 
 
+def _add_cost_actuals(
+    session: Session,
+    *,
+    project_id: str,
+    rows: list[tuple[str | None, float]],
+    currency_code: str = "GBP",
+) -> None:
+    for index, (discipline_code, amount) in enumerate(rows, start=1):
+        discipline_id = _discipline(session, discipline_code).id if discipline_code else None
+        day = min(index, 28)
+        session.add(
+            MappedActual(
+                project_id=project_id,
+                discipline_id=discipline_id,
+                work_date=date(2026, 3, day),
+                posting_date=date(2026, 3, day),
+                description=f"Cost actual {index}",
+                vendor_name="Trusted Vendor",
+                amount=amount,
+                currency_code=currency_code,
+                financial_type=CetaRowFinancialType.cost,
+                cost_category_key="third_party" if index % 2 == 0 else "labour",
+                revenue_category_key=None,
+                actual_business_key=f"{project_id}-cost-{index}",
+                supersedes_mapped_actual_id=None,
+                is_current=True,
+                change_type=MappedActualChangeType.new,
+                mapped_by_id=None,
+                mapped_at=datetime(2026, 3, day, 12, 0, tzinfo=UTC),
+            )
+        )
+
+
 def test_project_predictive_guidance_returns_quote_mix_spread_and_risk_flags(
     client: TestClient,
     db_session: Session,
@@ -378,6 +414,210 @@ def test_project_predictive_guidance_surfaces_missing_target_calendar_signal(
     }
 
 
+def test_project_predictive_guidance_honors_selected_quote_version_context(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    _add_project(
+        db_session,
+        project_id="project_pred_vguid_target",
+        name="Predictive Version Target",
+        status=ProjectStatus.bid,
+        client_normalized_name="north star pictures",
+        quote_total=100000,
+        duration_weeks=6,
+        currency_code="GBP",
+    )
+    for index, quote_total in enumerate((95000, 105000, 118000), start=1):
+        _add_project(
+            db_session,
+            project_id=f"project_pvguid_hist_{index}",
+            name=f"Predictive Version Candidate {index}",
+            status=ProjectStatus.complete,
+            client_normalized_name="north star pictures",
+            quote_total=quote_total,
+            duration_weeks=8,
+            currency_code="GBP",
+            benchmark_actual=round(quote_total * 1.08, 2),
+        )
+
+    quote = db_session.scalar(select(Quote).where(Quote.project_id == "project_pred_vguid_target"))
+    assert quote is not None
+    alternate_version = QuoteVersion(
+        quote_id=quote.id,
+        version_number=2,
+        status=QuoteVersionStatus.draft,
+        title="Alternative quote version",
+        currency_code="GBP",
+        subtotal_amount=112000,
+        tax_amount=0,
+        total_amount=112000,
+    )
+    db_session.add(alternate_version)
+    db_session.commit()
+
+    response = client.get(
+        (
+            "/api/v1/projects/project_pred_vguid_target/predictive-guidance"
+            f"?quoteVersionId={alternate_version.id}"
+        ),
+        headers=_admin_headers(client),
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+
+    assert payload["requestContext"]["quoteVersionId"] == alternate_version.id
+    assert payload["target"]["quoteVersionId"] == alternate_version.id
+
+
+def test_prediction_run_scenarios_include_advisory_spend_outlook_and_scale_by_actual_multiplier(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    _add_project(
+        db_session,
+        project_id="project_pred_spend_target",
+        name="Predictive Spend Target",
+        status=ProjectStatus.bid,
+        client_normalized_name="north star pictures",
+        quote_total=132000,
+        duration_weeks=6,
+        currency_code="GBP",
+        line_amounts=[
+            ("offline", 54000),
+            ("online", 46200),
+            ("sound", 31800),
+        ],
+        schedule_ranges=[
+            ("Prep", date(2026, 4, 1), date(2026, 4, 20), 35.0, "offline"),
+            ("Finish", date(2026, 4, 21), date(2026, 5, 31), 65.0, "online"),
+        ],
+    )
+    for index, quote_total in enumerate((124000, 138000, 149000), start=1):
+        _add_project(
+            db_session,
+            project_id=f"project_pred_spend_candidate_{index}",
+            name=f"Predictive Spend Candidate {index}",
+            status=ProjectStatus.complete,
+            client_normalized_name="north star pictures",
+            quote_total=quote_total,
+            duration_weeks=8 + index,
+            currency_code="GBP",
+            benchmark_actual=round(quote_total * 1.09, 2),
+            line_amounts=[
+                ("offline", round(quote_total * 0.42, 2)),
+                ("online", round(quote_total * 0.33, 2)),
+                ("sound", round(quote_total * 0.25, 2)),
+            ],
+            schedule_ranges=[
+                ("Build", date(2026, 1, 1), date(2026, 1, 31), 30.0, "offline"),
+                ("Review", date(2026, 2, 1), date(2026, 2, 28), 30.0, "online"),
+                ("Delivery", date(2026, 3, 1), date(2026, 3, 31), 40.0, "sound"),
+            ],
+        )
+
+    _add_cost_actuals(
+        db_session,
+        project_id="project_pred_spend_target",
+        currency_code="GBP",
+        rows=[("offline", 18000), ("online", 9000)],
+    )
+    _add_cost_actuals(
+        db_session,
+        project_id="project_pred_spend_candidate_1",
+        currency_code="GBP",
+        rows=[("offline", 28000), ("online", 12000), ("sound", 8000)],
+    )
+    _add_cost_actuals(
+        db_session,
+        project_id="project_pred_spend_candidate_2",
+        currency_code="GBP",
+        rows=[("offline", 32000), ("online", 15000), ("sound", 7000)],
+    )
+    _add_cost_actuals(
+        db_session,
+        project_id="project_pred_spend_candidate_3",
+        currency_code="GBP",
+        rows=[("offline", 29000), ("online", 13000), ("sound", 10000)],
+    )
+    db_session.commit()
+
+    response = client.post(
+        "/api/v1/projects/project_pred_spend_target/prediction-runs",
+        headers=_admin_headers(client),
+        json={
+            "limit": 25,
+            "scenarioAssumptions": {
+                "upside": {"actualMultiplier": 0.9, "varianceDeltaPct": -3},
+                "downside": {"actualMultiplier": 1.2, "varianceDeltaPct": 6},
+            },
+        },
+    )
+    assert response.status_code == 201, response.text
+    payload = response.json()
+
+    scenarios = {item["scenarioKey"]: item for item in payload["scenarios"]}
+    base = scenarios["base"]
+    upside = scenarios["upside"]
+    downside = scenarios["downside"]
+
+    assert base["spendSummary"] is not None
+    assert base["spendSummary"]["basis"] == "comparable_cost_history"
+    assert base["spendSummary"]["predictedTotalCost"] >= base["spendSummary"]["currentActualCost"]
+    assert len(base["spendSummary"]["disciplineSpend"]) >= 2
+    assert downside["spendSummary"]["predictedTotalCost"] > base["spendSummary"]["predictedTotalCost"]
+    assert upside["spendSummary"]["predictedTotalCost"] < base["spendSummary"]["predictedTotalCost"]
+    assert downside["spendSummary"]["currentActualCost"] == base["spendSummary"]["currentActualCost"]
+    assert all(
+        item["predictedTotalCost"] >= item["currentActualCost"]
+        for item in downside["spendSummary"]["disciplineSpend"]
+    )
+
+
+def test_prediction_run_spend_outlook_reports_not_available_without_cost_history(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    _add_project(
+        db_session,
+        project_id="project_pred_spend_gap_target",
+        name="Predictive Spend Gap Target",
+        status=ProjectStatus.bid,
+        client_normalized_name="north star pictures",
+        quote_total=98000,
+        duration_weeks=5,
+        currency_code="GBP",
+    )
+    for index, quote_total in enumerate((92000, 101000, 110000), start=1):
+        _add_project(
+            db_session,
+            project_id=f"project_pred_spend_gap_candidate_{index}",
+            name=f"Predictive Spend Gap Candidate {index}",
+            status=ProjectStatus.complete,
+            client_normalized_name="north star pictures",
+            quote_total=quote_total,
+            duration_weeks=7 + index,
+            currency_code="GBP",
+            benchmark_actual=round(quote_total * 1.07, 2),
+        )
+    db_session.commit()
+
+    response = client.post(
+        "/api/v1/projects/project_pred_spend_gap_target/prediction-runs",
+        headers=_admin_headers(client),
+        json={"limit": 25},
+    )
+    assert response.status_code == 201, response.text
+    payload = response.json()
+
+    base = next(item for item in payload["scenarios"] if item["scenarioKey"] == "base")
+    assert base["spendSummary"] is not None
+    assert base["spendSummary"]["basis"] == "insufficient_cost_history"
+    assert base["spendSummary"]["predictedTotalCost"] is None
+    assert base["spendSummary"]["predictedRemainingCost"] is None
+    assert base["spendSummary"]["disciplineSpend"] == []
+
+
 def test_prediction_run_endpoints_support_overrides_scenarios_and_forecast_promotion(
     client: TestClient,
     db_session: Session,
@@ -418,6 +658,30 @@ def test_prediction_run_endpoints_support_overrides_scenarios_and_forecast_promo
                 ("Delivery", date(2026, 3, 1), date(2026, 3, 31), 40.0, "sound"),
             ],
         )
+    _add_cost_actuals(
+        db_session,
+        project_id="project_pred_run_target",
+        currency_code="GBP",
+        rows=[("offline", 17500), ("online", 9500)],
+    )
+    _add_cost_actuals(
+        db_session,
+        project_id="project_pred_run_candidate_1",
+        currency_code="GBP",
+        rows=[("offline", 28500), ("online", 12500), ("sound", 7000)],
+    )
+    _add_cost_actuals(
+        db_session,
+        project_id="project_pred_run_candidate_2",
+        currency_code="GBP",
+        rows=[("offline", 31000), ("online", 14250), ("sound", 7750)],
+    )
+    _add_cost_actuals(
+        db_session,
+        project_id="project_pred_run_candidate_3",
+        currency_code="GBP",
+        rows=[("offline", 32750), ("online", 15000), ("sound", 8500)],
+    )
     db_session.commit()
 
     response = client.post(
@@ -427,6 +691,7 @@ def test_prediction_run_endpoints_support_overrides_scenarios_and_forecast_promo
             "limit": 25,
             "scenarioAssumptions": {
                 "downside": {
+                    "actualMultiplier": 1.15,
                     "scheduleShiftMonths": 1,
                     "varianceDeltaPct": 6,
                     "winProbabilityDeltaPct": -12,
@@ -446,7 +711,9 @@ def test_prediction_run_endpoints_support_overrides_scenarios_and_forecast_promo
         item for item in payload["scenarios"] if item["scenarioKey"] == "downside"
     )
     assert downside_scenario["updatedAt"] is not None
+    assert downside_scenario["spendSummary"] is not None
     assert downside_scenario["assumptionOverrides"]["scheduleShiftMonths"] == 1
+    assert downside_scenario["assumptionOverrides"]["actualMultiplier"] == 1.15
     assert downside_scenario["projectedWeightedRevenue"] is not None
 
     response = client.get(
@@ -501,6 +768,7 @@ def test_prediction_run_endpoints_support_overrides_scenarios_and_forecast_promo
         json={
             "expectedUpdatedAt": downside_scenario["updatedAt"],
             "assumptionOverrides": {
+                "actualMultiplier": 1.2,
                 "scheduleShiftMonths": 2,
                 "varianceDeltaPct": 8,
                 "winProbabilityDeltaPct": -18,
@@ -512,7 +780,9 @@ def test_prediction_run_endpoints_support_overrides_scenarios_and_forecast_promo
     downside_scenario = next(
         item for item in scenario_payload["scenarios"] if item["scenarioKey"] == "downside"
     )
+    assert downside_scenario["assumptionOverrides"]["actualMultiplier"] == 1.2
     assert downside_scenario["assumptionOverrides"]["scheduleShiftMonths"] == 2
+    assert downside_scenario["spendSummary"]["predictedTotalCost"] >= downside_scenario["spendSummary"]["currentActualCost"]
     assert downside_scenario["monthlyRevenueSpread"][0]["month"] >= "2026-06"
 
     response = client.post(
@@ -535,6 +805,8 @@ def test_prediction_run_endpoints_support_overrides_scenarios_and_forecast_promo
     assert forecast_version is not None
     assert forecast_version.title == "Downside reforecast draft"
     assert float(forecast_version.probability_percent) == 55
+    assert float(forecast_version.total_amount) != downside_scenario["spendSummary"]["predictedTotalCost"]
+    assert float(forecast_version.total_amount) > downside_scenario["spendSummary"]["predictedTotalCost"]
     assert forecast_version.scenario_key == "downside"
     assert forecast_version.engine_source == "unified_forecast_engine"
     assert forecast_version.prediction_run_id == run_id

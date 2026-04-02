@@ -21,7 +21,13 @@ import type {
   FinalizeQuoteIngestionUploadRequest,
   FinalizeQuoteIngestionUploadResponse,
   ForecastDetailRead,
+  ForecastPhasingDraftRead,
+  ForecastPhasingDraftUpsertRequest,
   ForecastLineAllocationsReplaceRequest,
+  ForecastPhasingPreviewRead,
+  ForecastPhasingPreviewRequest,
+  ForecastPhasingRowUpdateRequest,
+  ForecastPhasingWorkspaceRead,
   ForecastPolicySummary,
   ForecastRecalculateResponse,
   ForecastVersionCreateRequest,
@@ -105,6 +111,17 @@ export interface DashboardQueryOptions {
   disciplineId?: string;
   status?: string;
   scenarioKey?: string;
+}
+
+export interface ForecastPhasingWorkspaceQueryOptions {
+  fromMonth?: string;
+  toMonth?: string;
+  clientId?: string;
+  projectId?: string;
+  disciplineId?: string;
+  status?: string;
+  scenarioKey?: string;
+  rowMode?: string;
 }
 
 export interface AuditEventsQueryOptions {
@@ -272,6 +289,19 @@ export function createApiClient(config: ApiClientConfig) {
       disciplineId: options?.disciplineId,
       status: options?.status,
       scenarioKey: options?.scenarioKey,
+    };
+  }
+
+  function forecastPhasingQuery(options?: ForecastPhasingWorkspaceQueryOptions) {
+    return {
+      fromMonth: options?.fromMonth,
+      toMonth: options?.toMonth,
+      clientId: options?.clientId,
+      projectId: options?.projectId,
+      disciplineId: options?.disciplineId,
+      status: options?.status,
+      scenarioKey: options?.scenarioKey,
+      rowMode: options?.rowMode,
     };
   }
 
@@ -644,6 +674,44 @@ export function createApiClient(config: ApiClientConfig) {
       request<ForecastPolicySummary>("/api/v1/forecasts/policy"),
     getProjectForecast: (projectId: string) =>
       request<ForecastDetailRead>(`/api/v1/forecasts/projects/${projectId}`),
+    getForecastPhasingWorkspace: (options?: ForecastPhasingWorkspaceQueryOptions) =>
+      request<ForecastPhasingWorkspaceRead>(
+        withQuery("/api/v1/forecasts/phasing-workspace", forecastPhasingQuery(options)),
+      ),
+    previewForecastPhasingAction: (payload: ForecastPhasingPreviewRequest) =>
+      request<ForecastPhasingPreviewRead>("/api/v1/forecasts/phasing-workspace/preview", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    updateProjectForecastPhasingDraft: (
+      projectId: string,
+      payload: ForecastPhasingDraftUpsertRequest,
+    ) =>
+      request<ForecastPhasingDraftRead>(
+        `/api/v1/forecasts/projects/${projectId}/phasing-draft`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+      ),
+    discardProjectForecastPhasingDraft: (
+      projectId: string,
+      options: {
+        forecastVersionId?: string | null;
+        rowMode: string;
+        disciplineId?: string | null;
+      },
+    ) =>
+      request<ForecastPhasingWorkspaceRead>(
+        withQuery(`/api/v1/forecasts/projects/${projectId}/phasing-draft`, {
+          ...(options.forecastVersionId ? { forecastVersionId: options.forecastVersionId } : {}),
+          rowMode: options.rowMode,
+          ...(options.disciplineId ? { disciplineId: options.disciplineId } : {}),
+        }),
+        {
+          method: "DELETE",
+        },
+      ),
     getForecastVersion: (versionId: string) =>
       request<ForecastVersionRead>(`/api/v1/forecasts/versions/${versionId}`),
     createForecastVersion: (
@@ -671,6 +739,17 @@ export function createApiClient(config: ApiClientConfig) {
     ) =>
       request<ForecastVersionRead>(
         `/api/v1/forecasts/lines/${lineId}/allocations`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+      ),
+    updateProjectForecastPhasing: (
+      projectId: string,
+      payload: ForecastPhasingRowUpdateRequest,
+    ) =>
+      request<ForecastPhasingWorkspaceRead>(
+        `/api/v1/forecasts/projects/${projectId}/phasing`,
         {
           method: "PUT",
           body: JSON.stringify(payload),

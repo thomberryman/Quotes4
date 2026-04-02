@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import os
+import hashlib
 from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
 from app.main import app
-from app.models import BackgroundJob, UploadedFile
+from app.models import BackgroundJob, UploadedFile, User
 from app.models.enums import BackgroundJobStatus
 
 TEST_CHECKSUM = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
@@ -259,6 +261,24 @@ def test_failed_auth_attempts_are_written_to_audit_log(client: TestClient) -> No
     )
     assert auth_failure_event["metadata"]["email"] == os.environ["DEV_ADMIN_EMAIL"]
     assert auth_failure_event["metadata"]["reason"] == "invalid_credentials"
+
+
+def test_login_accepts_legacy_fallback_sha256_password_hashes(client: TestClient, db_session) -> None:
+    admin_user = db_session.scalar(select(User).where(User.email == os.environ["DEV_ADMIN_EMAIL"]))
+    assert admin_user is not None
+    password = os.environ["DEV_ADMIN_PASSWORD"]
+    admin_user.password_hash = f"fallback-sha256${hashlib.sha256(password.encode('utf-8')).hexdigest()}"
+    db_session.commit()
+
+    response = client.post(
+        "/api/v1/auth/session",
+        json={
+            "email": os.environ["DEV_ADMIN_EMAIL"],
+            "password": password,
+        },
+    )
+
+    assert response.status_code == 200, response.text
 
 
 def test_project_create_rejects_end_date_before_start_date(client: TestClient) -> None:

@@ -102,6 +102,32 @@ class PredictiveMonthlyRevenueSpread(BaseSchema):
     reasoning: list[str]
 
 
+class PredictiveDisciplineSpend(BaseSchema):
+    discipline_id: str
+    discipline_code: str | None = None
+    discipline_name: str | None = None
+    current_actual_cost: float = 0
+    predicted_total_cost: float | None = None
+    predicted_remaining_cost: float | None = None
+    cost_share_pct: float = 0
+    confidence: str
+    sample_size: int = 0
+    reasoning: list[str] = Field(default_factory=list)
+
+
+class PredictiveSpendSummary(BaseSchema):
+    current_actual_cost: float = 0
+    predicted_total_cost: float | None = None
+    predicted_remaining_cost: float | None = None
+    implied_margin_amount: float | None = None
+    implied_margin_pct: float | None = None
+    confidence: str
+    confidence_score: float
+    fallback_tier: str
+    basis: str
+    discipline_spend: list[PredictiveDisciplineSpend] = Field(default_factory=list)
+
+
 class OverrunRiskFlag(BaseSchema):
     key: str
     severity: str
@@ -143,6 +169,7 @@ class PredictionScenarioRead(BaseSchema):
     updated_at: datetime | None = None
     assumption_overrides: dict[str, object] = Field(default_factory=dict)
     likely_quote_range: PredictiveQuoteGuidance | None = None
+    spend_summary: PredictiveSpendSummary | None = None
     discipline_usage: list[PredictiveDisciplineUsage] = Field(default_factory=list)
     monthly_revenue_spread: list[PredictiveMonthlyRevenueSpread] = Field(default_factory=list)
     overrun_risk: OverrunRiskSummary

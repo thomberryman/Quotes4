@@ -4090,6 +4090,355 @@
         }
       }
     },
+    "/api/v1/forecasts/phasing-workspace": {
+      "get": {
+        "tags": [
+          "forecasts"
+        ],
+        "summary": "Get Forecast Phasing Workspace",
+        "operationId": "get_forecast_phasing_workspace_api_v1_forecasts_phasing_workspace_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fromMonth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Frommonth"
+            }
+          },
+          {
+            "name": "toMonth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tomonth"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Clientid"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Disciplineid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "scenarioKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scenariokey"
+            }
+          },
+          {
+            "name": "rowMode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "project",
+              "title": "Rowmode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastPhasingWorkspaceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forecasts/phasing-workspace/preview": {
+      "post": {
+        "tags": [
+          "forecasts"
+        ],
+        "summary": "Preview Forecast Phasing Action",
+        "operationId": "preview_forecast_phasing_action_api_v1_forecasts_phasing_workspace_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForecastPhasingPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastPhasingPreviewRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/forecasts/projects/{project_id}/phasing-draft": {
+      "put": {
+        "tags": [
+          "forecasts"
+        ],
+        "summary": "Update Project Forecast Phasing Draft",
+        "operationId": "update_project_forecast_phasing_draft_api_v1_forecasts_projects__project_id__phasing_draft_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForecastPhasingDraftUpsertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastPhasingDraftRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "forecasts"
+        ],
+        "summary": "Discard Project Forecast Phasing Draft",
+        "operationId": "discard_project_forecast_phasing_draft_api_v1_forecasts_projects__project_id__phasing_draft_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "forecastVersionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Forecastversionid"
+            }
+          },
+          {
+            "name": "rowMode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rowmode"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Disciplineid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastPhasingWorkspaceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/forecasts/projects/{project_id}/versions": {
       "post": {
         "tags": [
@@ -4130,6 +4479,63 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ForecastVersionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/forecasts/projects/{project_id}/phasing": {
+      "put": {
+        "tags": [
+          "forecasts"
+        ],
+        "summary": "Update Project Forecast Phasing",
+        "operationId": "update_project_forecast_phasing_api_v1_forecasts_projects__project_id__phasing_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForecastPhasingRowUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastPhasingWorkspaceRead"
                 }
               }
             }
@@ -8453,6 +8859,272 @@
         ],
         "title": "DashboardFilterOptions"
       },
+      "DashboardForecastAggregationsRead": {
+        "properties": {
+          "totalsByMonth": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardForecastMonthTotalRead"
+            },
+            "type": "array",
+            "title": "Totalsbymonth"
+          },
+          "totalsByStatus": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardForecastStatusTotalRead"
+            },
+            "type": "array",
+            "title": "Totalsbystatus"
+          },
+          "totalsByDiscipline": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardForecastDisciplineTotalRead"
+            },
+            "type": "array",
+            "title": "Totalsbydiscipline"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "totalsByMonth",
+          "totalsByStatus",
+          "totalsByDiscipline"
+        ],
+        "title": "DashboardForecastAggregationsRead"
+      },
+      "DashboardForecastDatasetContractRead": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generatedat"
+          },
+          "currencyCode": {
+            "type": "string",
+            "title": "Currencycode"
+          },
+          "fromMonth": {
+            "type": "string",
+            "title": "Frommonth"
+          },
+          "toMonth": {
+            "type": "string",
+            "title": "Tomonth"
+          },
+          "scenarioKey": {
+            "type": "string",
+            "title": "Scenariokey"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardForecastProjectContractRead"
+            },
+            "type": "array",
+            "title": "Projects"
+          },
+          "monthlyRows": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardForecastMonthRowRead"
+            },
+            "type": "array",
+            "title": "Monthlyrows"
+          },
+          "aggregations": {
+            "$ref": "#/components/schemas/DashboardForecastAggregationsRead"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "currencyCode",
+          "fromMonth",
+          "toMonth",
+          "scenarioKey",
+          "projects",
+          "monthlyRows",
+          "aggregations"
+        ],
+        "title": "DashboardForecastDatasetContractRead"
+      },
+      "DashboardForecastDisciplineTotalRead": {
+        "properties": {
+          "discipline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discipline"
+          },
+          "revenueValue": {
+            "type": "number",
+            "title": "Revenuevalue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revenueValue"
+        ],
+        "title": "DashboardForecastDisciplineTotalRead"
+      },
+      "DashboardForecastMonthRowRead": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "revenueValue": {
+            "type": "number",
+            "title": "Revenuevalue"
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "discipline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discipline"
+          },
+          "allocationMethod": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "manual"
+            ],
+            "title": "Allocationmethod"
+          },
+          "overrideFlag": {
+            "type": "boolean",
+            "title": "Overrideflag",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "month",
+          "revenueValue",
+          "projectId",
+          "allocationMethod"
+        ],
+        "title": "DashboardForecastMonthRowRead"
+      },
+      "DashboardForecastMonthTotalRead": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "revenueValue": {
+            "type": "number",
+            "title": "Revenuevalue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "month",
+          "revenueValue"
+        ],
+        "title": "DashboardForecastMonthTotalRead"
+      },
+      "DashboardForecastProjectContractRead": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "projectName": {
+            "type": "string",
+            "title": "Projectname"
+          },
+          "client": {
+            "type": "string",
+            "title": "Client"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "estimated",
+              "awarded",
+              "lost"
+            ],
+            "title": "Status"
+          },
+          "executionStartDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executionstartdate"
+          },
+          "executionEndDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executionenddate"
+          },
+          "totalForecastValue": {
+            "type": "number",
+            "title": "Totalforecastvalue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "projectId",
+          "projectName",
+          "client",
+          "status",
+          "totalForecastValue"
+        ],
+        "title": "DashboardForecastProjectContractRead"
+      },
+      "DashboardForecastStatusTotalRead": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "estimated",
+              "awarded",
+              "lost"
+            ],
+            "title": "Status"
+          },
+          "revenueValue": {
+            "type": "number",
+            "title": "Revenuevalue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "revenueValue"
+        ],
+        "title": "DashboardForecastStatusTotalRead"
+      },
       "DashboardOption": {
         "properties": {
           "id": {
@@ -10442,6 +11114,27 @@
               }
             ],
             "title": "Sourcecontext"
+          },
+          "isManualOverride": {
+            "type": "boolean",
+            "title": "Ismanualoverride",
+            "default": false
+          },
+          "isLocked": {
+            "type": "boolean",
+            "title": "Islocked",
+            "default": false
+          },
+          "manualNote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualnote"
           }
         },
         "additionalProperties": false,
@@ -10452,6 +11145,1056 @@
           "weightedAmount"
         ],
         "title": "ForecastMonthlyAllocationRead"
+      },
+      "ForecastPhasingCellRead": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "weightedAmount": {
+            "type": "number",
+            "title": "Weightedamount"
+          },
+          "actualAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualamount"
+          },
+          "lowAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lowamount"
+          },
+          "highAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highamount"
+          },
+          "allocationSource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allocationsource"
+          },
+          "isManualOverride": {
+            "type": "boolean",
+            "title": "Ismanualoverride",
+            "default": false
+          },
+          "isLocked": {
+            "type": "boolean",
+            "title": "Islocked",
+            "default": false
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable",
+            "default": true
+          },
+          "manualNote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manualnote"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "month",
+          "amount",
+          "weightedAmount"
+        ],
+        "title": "ForecastPhasingCellRead"
+      },
+      "ForecastPhasingCellWrite": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Amount"
+          },
+          "isLocked": {
+            "type": "boolean",
+            "title": "Islocked",
+            "default": false
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "month",
+          "amount"
+        ],
+        "title": "ForecastPhasingCellWrite"
+      },
+      "ForecastPhasingChangeRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "forecastVersionId": {
+            "type": "string",
+            "title": "Forecastversionid"
+          },
+          "rowMode": {
+            "type": "string",
+            "title": "Rowmode"
+          },
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "disciplineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplineid"
+          },
+          "beforeAmount": {
+            "type": "number",
+            "title": "Beforeamount"
+          },
+          "afterAmount": {
+            "type": "number",
+            "title": "Afteramount"
+          },
+          "beforeLocked": {
+            "type": "boolean",
+            "title": "Beforelocked",
+            "default": false
+          },
+          "afterLocked": {
+            "type": "boolean",
+            "title": "Afterlocked",
+            "default": false
+          },
+          "sourceMethod": {
+            "type": "string",
+            "title": "Sourcemethod"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "actorId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actorid"
+          },
+          "actorEmail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actoremail"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "forecastVersionId",
+          "rowMode",
+          "month",
+          "beforeAmount",
+          "afterAmount",
+          "sourceMethod",
+          "createdAt"
+        ],
+        "title": "ForecastPhasingChangeRead"
+      },
+      "ForecastPhasingDraftRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "forecastVersionId": {
+            "type": "string",
+            "title": "Forecastversionid"
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "rowMode": {
+            "type": "string",
+            "title": "Rowmode"
+          },
+          "disciplineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplineid"
+          },
+          "saveMode": {
+            "type": "string",
+            "title": "Savemode",
+            "default": "replace"
+          },
+          "currentState": {
+            "$ref": "#/components/schemas/ForecastPhasingDraftStateRead"
+          },
+          "pastStates": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingDraftStateRead"
+            },
+            "type": "array",
+            "title": "Paststates"
+          },
+          "futureStates": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingDraftStateRead"
+            },
+            "type": "array",
+            "title": "Futurestates"
+          },
+          "updatedById": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedbyid"
+          },
+          "updatedByEmail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedbyemail"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "forecastVersionId",
+          "projectId",
+          "rowMode",
+          "currentState",
+          "updatedAt"
+        ],
+        "title": "ForecastPhasingDraftRead"
+      },
+      "ForecastPhasingDraftStateRead": {
+        "properties": {
+          "forecastVersionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastversionid"
+          },
+          "expectedUpdatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expectedupdatedat"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingCellWrite"
+            },
+            "type": "array",
+            "title": "Cells"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expectedUpdatedAt"
+        ],
+        "title": "ForecastPhasingDraftStateRead"
+      },
+      "ForecastPhasingDraftStateWrite": {
+        "properties": {
+          "forecastVersionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastversionid"
+          },
+          "expectedUpdatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expectedupdatedat"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingCellWrite"
+            },
+            "type": "array",
+            "title": "Cells"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expectedUpdatedAt"
+        ],
+        "title": "ForecastPhasingDraftStateWrite"
+      },
+      "ForecastPhasingDraftUpsertRequest": {
+        "properties": {
+          "rowMode": {
+            "type": "string",
+            "title": "Rowmode"
+          },
+          "disciplineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplineid"
+          },
+          "saveMode": {
+            "type": "string",
+            "title": "Savemode",
+            "default": "replace"
+          },
+          "expectedDraftUpdatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expecteddraftupdatedat"
+          },
+          "currentState": {
+            "$ref": "#/components/schemas/ForecastPhasingDraftStateWrite"
+          },
+          "pastStates": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingDraftStateWrite"
+            },
+            "type": "array",
+            "title": "Paststates"
+          },
+          "futureStates": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingDraftStateWrite"
+            },
+            "type": "array",
+            "title": "Futurestates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rowMode",
+          "currentState"
+        ],
+        "title": "ForecastPhasingDraftUpsertRequest"
+      },
+      "ForecastPhasingFilterOption": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ForecastPhasingFilterOption"
+      },
+      "ForecastPhasingFilterOptions": {
+        "properties": {
+          "clients": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingFilterOption"
+            },
+            "type": "array",
+            "title": "Clients"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingFilterOption"
+            },
+            "type": "array",
+            "title": "Projects"
+          },
+          "disciplines": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingFilterOption"
+            },
+            "type": "array",
+            "title": "Disciplines"
+          },
+          "statuses": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingFilterOption"
+            },
+            "type": "array",
+            "title": "Statuses"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingFilterOption"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "clients",
+          "projects",
+          "disciplines",
+          "statuses",
+          "scenarios"
+        ],
+        "title": "ForecastPhasingFilterOptions"
+      },
+      "ForecastPhasingMonthTotalRead": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "weightedAmount": {
+            "type": "number",
+            "title": "Weightedamount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "month",
+          "amount",
+          "weightedAmount"
+        ],
+        "title": "ForecastPhasingMonthTotalRead"
+      },
+      "ForecastPhasingPreviewRead": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "rowMode": {
+            "type": "string",
+            "title": "Rowmode"
+          },
+          "disciplineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplineid"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingCellWrite"
+            },
+            "type": "array",
+            "title": "Cells"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "projectId",
+          "rowMode",
+          "action"
+        ],
+        "title": "ForecastPhasingPreviewRead"
+      },
+      "ForecastPhasingPreviewRequest": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "rowMode": {
+            "type": "string",
+            "title": "Rowmode"
+          },
+          "disciplineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplineid"
+          },
+          "fromMonth": {
+            "type": "string",
+            "title": "Frommonth"
+          },
+          "toMonth": {
+            "type": "string",
+            "title": "Tomonth"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "lockedMonths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lockedmonths"
+          },
+          "cadenceProfileType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadenceprofiletype"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "projectId",
+          "rowMode",
+          "fromMonth",
+          "toMonth",
+          "action"
+        ],
+        "title": "ForecastPhasingPreviewRequest"
+      },
+      "ForecastPhasingRowRead": {
+        "properties": {
+          "rowKey": {
+            "type": "string",
+            "title": "Rowkey"
+          },
+          "rowMode": {
+            "type": "string",
+            "title": "Rowmode"
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "projectName": {
+            "type": "string",
+            "title": "Projectname"
+          },
+          "clientId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientid"
+          },
+          "clientName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientname"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "disciplineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplineid"
+          },
+          "disciplineName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplinename"
+          },
+          "forecastVersionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastversionid"
+          },
+          "forecastVersionStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastversionstatus"
+          },
+          "forecastVersionUpdatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastversionupdatedat"
+          },
+          "scenarioKey": {
+            "type": "string",
+            "title": "Scenariokey",
+            "default": "base"
+          },
+          "currencyCode": {
+            "type": "string",
+            "title": "Currencycode",
+            "default": "GBP"
+          },
+          "basePhasingProfile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basephasingprofile"
+          },
+          "executionStartDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executionstartdate"
+          },
+          "executionEndDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executionenddate"
+          },
+          "totalAmount": {
+            "type": "number",
+            "title": "Totalamount"
+          },
+          "weightedTotalAmount": {
+            "type": "number",
+            "title": "Weightedtotalamount"
+          },
+          "canEdit": {
+            "type": "boolean",
+            "title": "Canedit",
+            "default": false
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingCellRead"
+            },
+            "type": "array",
+            "title": "Cells"
+          },
+          "activeDraft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForecastPhasingDraftRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rowKey",
+          "rowMode",
+          "projectId",
+          "projectName",
+          "status",
+          "totalAmount",
+          "weightedTotalAmount"
+        ],
+        "title": "ForecastPhasingRowRead"
+      },
+      "ForecastPhasingRowUpdateRequest": {
+        "properties": {
+          "forecastVersionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastversionid"
+          },
+          "expectedUpdatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expectedupdatedat"
+          },
+          "rowMode": {
+            "type": "string",
+            "title": "Rowmode"
+          },
+          "disciplineId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplineid"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingCellWrite"
+            },
+            "type": "array",
+            "title": "Cells"
+          },
+          "replaceExistingOverrides": {
+            "type": "boolean",
+            "title": "Replaceexistingoverrides",
+            "default": true
+          },
+          "sourceMethod": {
+            "type": "string",
+            "title": "Sourcemethod",
+            "default": "manual_cells"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expectedUpdatedAt",
+          "rowMode"
+        ],
+        "title": "ForecastPhasingRowUpdateRequest"
+      },
+      "ForecastPhasingStatusMonthTotalRead": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "weightedAmount": {
+            "type": "number",
+            "title": "Weightedamount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "month",
+          "amount",
+          "weightedAmount"
+        ],
+        "title": "ForecastPhasingStatusMonthTotalRead"
+      },
+      "ForecastPhasingWorkspaceRead": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generatedat"
+          },
+          "fromMonth": {
+            "type": "string",
+            "title": "Frommonth"
+          },
+          "toMonth": {
+            "type": "string",
+            "title": "Tomonth"
+          },
+          "rowMode": {
+            "type": "string",
+            "title": "Rowmode"
+          },
+          "scenarioKey": {
+            "type": "string",
+            "title": "Scenariokey",
+            "default": "base"
+          },
+          "filterOptions": {
+            "$ref": "#/components/schemas/ForecastPhasingFilterOptions"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Months"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingRowRead"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "monthTotals": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingMonthTotalRead"
+            },
+            "type": "array",
+            "title": "Monthtotals"
+          },
+          "statusMonthTotals": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingStatusMonthTotalRead"
+            },
+            "type": "array",
+            "title": "Statusmonthtotals"
+          },
+          "recentChanges": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPhasingChangeRead"
+            },
+            "type": "array",
+            "title": "Recentchanges"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "fromMonth",
+          "toMonth",
+          "rowMode",
+          "filterOptions",
+          "months",
+          "rows",
+          "monthTotals",
+          "statusMonthTotals"
+        ],
+        "title": "ForecastPhasingWorkspaceRead"
       },
       "ForecastPolicySummary": {
         "properties": {
@@ -10601,6 +12344,429 @@
           "message"
         ],
         "title": "ForecastRecalculateResponse"
+      },
+      "ForecastRevenueDashboardSection": {
+        "properties": {
+          "currencyCode": {
+            "type": "string",
+            "title": "Currencycode"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Months"
+          },
+          "monthlyStatusTotals": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastRevenueMonthStatusPoint"
+            },
+            "type": "array",
+            "title": "Monthlystatustotals"
+          },
+          "overallStatusTotals": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastRevenueStatusTotal"
+            },
+            "type": "array",
+            "title": "Overallstatustotals"
+          },
+          "projectRows": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastRevenueProjectRow"
+            },
+            "type": "array",
+            "title": "Projectrows"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "currencyCode",
+          "months",
+          "monthlyStatusTotals",
+          "overallStatusTotals",
+          "projectRows"
+        ],
+        "title": "ForecastRevenueDashboardSection"
+      },
+      "ForecastRevenueDisciplineRow": {
+        "properties": {
+          "disciplineId": {
+            "type": "string",
+            "title": "Disciplineid"
+          },
+          "disciplineName": {
+            "type": "string",
+            "title": "Disciplinename"
+          },
+          "basePhasingProfile": {
+            "type": "string",
+            "title": "Basephasingprofile"
+          },
+          "forecastMethod": {
+            "type": "string",
+            "title": "Forecastmethod"
+          },
+          "lineCount": {
+            "type": "integer",
+            "title": "Linecount"
+          },
+          "manualOverrideLineCount": {
+            "type": "integer",
+            "title": "Manualoverridelinecount"
+          },
+          "totalAmount": {
+            "type": "number",
+            "title": "Totalamount"
+          },
+          "weightedTotalAmount": {
+            "type": "number",
+            "title": "Weightedtotalamount"
+          },
+          "monthValues": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastRevenueProjectMonthValue"
+            },
+            "type": "array",
+            "title": "Monthvalues"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "disciplineId",
+          "disciplineName",
+          "basePhasingProfile",
+          "forecastMethod",
+          "lineCount",
+          "manualOverrideLineCount",
+          "totalAmount",
+          "weightedTotalAmount",
+          "monthValues"
+        ],
+        "title": "ForecastRevenueDisciplineRow"
+      },
+      "ForecastRevenueMonthStatusPoint": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "bidAmount": {
+            "type": "number",
+            "title": "Bidamount"
+          },
+          "weightedBidAmount": {
+            "type": "number",
+            "title": "Weightedbidamount"
+          },
+          "awardedAmount": {
+            "type": "number",
+            "title": "Awardedamount"
+          },
+          "activeAmount": {
+            "type": "number",
+            "title": "Activeamount"
+          },
+          "completeAmount": {
+            "type": "number",
+            "title": "Completeamount"
+          },
+          "bookedAmount": {
+            "type": "number",
+            "title": "Bookedamount"
+          },
+          "lostAmount": {
+            "type": "number",
+            "title": "Lostamount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "month",
+          "bidAmount",
+          "weightedBidAmount",
+          "awardedAmount",
+          "activeAmount",
+          "completeAmount",
+          "bookedAmount",
+          "lostAmount"
+        ],
+        "title": "ForecastRevenueMonthStatusPoint"
+      },
+      "ForecastRevenueProjectMonthValue": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "weightedAmount": {
+            "type": "number",
+            "title": "Weightedamount"
+          },
+          "actualAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualamount"
+          },
+          "bookedAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bookedamount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "month",
+          "amount",
+          "weightedAmount"
+        ],
+        "title": "ForecastRevenueProjectMonthValue"
+      },
+      "ForecastRevenueProjectRow": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "projectName": {
+            "type": "string",
+            "title": "Projectname"
+          },
+          "clientId": {
+            "type": "string",
+            "title": "Clientid"
+          },
+          "clientName": {
+            "type": "string",
+            "title": "Clientname"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "quoteEntryDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quoteentrydate"
+          },
+          "executionStartDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executionstartdate"
+          },
+          "executionEndDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executionenddate"
+          },
+          "quoteToExecutionLeadMonths": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quotetoexecutionleadmonths"
+          },
+          "spanningMonthCount": {
+            "type": "integer",
+            "title": "Spanningmonthcount"
+          },
+          "basePhasingProfile": {
+            "type": "string",
+            "title": "Basephasingprofile"
+          },
+          "forecastMethod": {
+            "type": "string",
+            "title": "Forecastmethod"
+          },
+          "manualOverrideLineCount": {
+            "type": "integer",
+            "title": "Manualoverridelinecount"
+          },
+          "totalRevenue": {
+            "type": "number",
+            "title": "Totalrevenue"
+          },
+          "windowRevenue": {
+            "type": "number",
+            "title": "Windowrevenue"
+          },
+          "weightedTotalRevenue": {
+            "type": "number",
+            "title": "Weightedtotalrevenue"
+          },
+          "windowWeightedRevenue": {
+            "type": "number",
+            "title": "Windowweightedrevenue"
+          },
+          "forecastVersionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastversionid"
+          },
+          "forecastStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecaststatus"
+          },
+          "scenarioKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenariokey"
+          },
+          "changeSummary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changesummary"
+          },
+          "explanationSummary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanationsummary"
+          },
+          "monthValues": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastRevenueProjectMonthValue"
+            },
+            "type": "array",
+            "title": "Monthvalues"
+          },
+          "disciplineRows": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastRevenueDisciplineRow"
+            },
+            "type": "array",
+            "title": "Disciplinerows"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "projectId",
+          "projectName",
+          "clientId",
+          "clientName",
+          "status",
+          "spanningMonthCount",
+          "basePhasingProfile",
+          "forecastMethod",
+          "manualOverrideLineCount",
+          "totalRevenue",
+          "windowRevenue",
+          "weightedTotalRevenue",
+          "windowWeightedRevenue",
+          "monthValues",
+          "disciplineRows"
+        ],
+        "title": "ForecastRevenueProjectRow"
+      },
+      "ForecastRevenueStatusTotal": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "projectCount": {
+            "type": "integer",
+            "title": "Projectcount"
+          },
+          "totalAmount": {
+            "type": "number",
+            "title": "Totalamount"
+          },
+          "weightedTotalAmount": {
+            "type": "number",
+            "title": "Weightedtotalamount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "label",
+          "projectCount",
+          "totalAmount",
+          "weightedTotalAmount"
+        ],
+        "title": "ForecastRevenueStatusTotal"
       },
       "ForecastSanityCheckRead": {
         "properties": {
@@ -12071,8 +14237,14 @@
           "salesPipeline": {
             "$ref": "#/components/schemas/SalesPipelineSection"
           },
+          "forecastDataset": {
+            "$ref": "#/components/schemas/DashboardForecastDatasetContractRead"
+          },
           "monthlyRevenueForecast": {
             "$ref": "#/components/schemas/MonthlyRevenueForecastSection"
+          },
+          "forecastRevenue": {
+            "$ref": "#/components/schemas/ForecastRevenueDashboardSection"
           },
           "awardedLostTrend": {
             "$ref": "#/components/schemas/AwardedLostTrendSection"
@@ -12101,7 +14273,9 @@
           "filterOptions",
           "summaryCards",
           "salesPipeline",
+          "forecastDataset",
           "monthlyRevenueForecast",
+          "forecastRevenue",
           "awardedLostTrend",
           "quoteActualVariance",
           "clientProjectHistory",
@@ -13266,6 +15440,16 @@
               }
             ]
           },
+          "spendSummary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictiveSpendSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "disciplineUsage": {
             "items": {
               "$ref": "#/components/schemas/PredictiveDisciplineUsage"
@@ -13486,6 +15670,91 @@
           "detail"
         ],
         "title": "PredictionWinProbabilityFactor"
+      },
+      "PredictiveDisciplineSpend": {
+        "properties": {
+          "disciplineId": {
+            "type": "string",
+            "title": "Disciplineid"
+          },
+          "disciplineCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplinecode"
+          },
+          "disciplineName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disciplinename"
+          },
+          "currentActualCost": {
+            "type": "number",
+            "title": "Currentactualcost",
+            "default": 0
+          },
+          "predictedTotalCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predictedtotalcost"
+          },
+          "predictedRemainingCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predictedremainingcost"
+          },
+          "costSharePct": {
+            "type": "number",
+            "title": "Costsharepct",
+            "default": 0
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence"
+          },
+          "sampleSize": {
+            "type": "integer",
+            "title": "Samplesize",
+            "default": 0
+          },
+          "reasoning": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasoning"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "disciplineId",
+          "confidence"
+        ],
+        "title": "PredictiveDisciplineSpend"
       },
       "PredictiveDisciplineUsage": {
         "properties": {
@@ -13944,6 +16213,91 @@
           "reasoning"
         ],
         "title": "PredictiveQuoteGuidance"
+      },
+      "PredictiveSpendSummary": {
+        "properties": {
+          "currentActualCost": {
+            "type": "number",
+            "title": "Currentactualcost",
+            "default": 0
+          },
+          "predictedTotalCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predictedtotalcost"
+          },
+          "predictedRemainingCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predictedremainingcost"
+          },
+          "impliedMarginAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impliedmarginamount"
+          },
+          "impliedMarginPct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impliedmarginpct"
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence"
+          },
+          "confidenceScore": {
+            "type": "number",
+            "title": "Confidencescore"
+          },
+          "fallbackTier": {
+            "type": "string",
+            "title": "Fallbacktier"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis"
+          },
+          "disciplineSpend": {
+            "items": {
+              "$ref": "#/components/schemas/PredictiveDisciplineSpend"
+            },
+            "type": "array",
+            "title": "Disciplinespend"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "confidence",
+          "confidenceScore",
+          "fallbackTier",
+          "basis"
+        ],
+        "title": "PredictiveSpendSummary"
       },
       "PresignUploadRequest": {
         "properties": {
@@ -14442,6 +16796,57 @@
               }
             ],
             "title": "Bidduedate"
+          },
+          "estimatedExecutionStartDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedexecutionstartdate"
+          },
+          "estimatedExecutionEndDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedexecutionenddate"
+          },
+          "revenueAllocationMethod": {
+            "$ref": "#/components/schemas/RevenueAllocationMethod",
+            "default": "cadence_profile"
+          },
+          "cadenceProfileType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadenceprofiletype"
+          },
+          "cadenceProfileData": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadenceprofiledata"
           }
         },
         "additionalProperties": false,
@@ -15448,6 +17853,57 @@
             ],
             "title": "Bidduedate"
           },
+          "estimatedExecutionStartDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedexecutionstartdate"
+          },
+          "estimatedExecutionEndDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedexecutionenddate"
+          },
+          "revenueAllocationMethod": {
+            "$ref": "#/components/schemas/RevenueAllocationMethod",
+            "default": "cadence_profile"
+          },
+          "cadenceProfileType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadenceprofiletype"
+          },
+          "cadenceProfileData": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadenceprofiledata"
+          },
           "bidSubmittedAt": {
             "anyOf": [
               {
@@ -16029,6 +18485,63 @@
               }
             ],
             "title": "Bidduedate"
+          },
+          "estimatedExecutionStartDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedexecutionstartdate"
+          },
+          "estimatedExecutionEndDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedexecutionenddate"
+          },
+          "revenueAllocationMethod": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RevenueAllocationMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cadenceProfileType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadenceprofiletype"
+          },
+          "cadenceProfileData": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadenceprofiledata"
           },
           "bidSubmittedAt": {
             "anyOf": [
@@ -18042,6 +20555,13 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RerunQuoteIngestionRunRequest"
+      },
+      "RevenueAllocationMethod": {
+        "type": "string",
+        "enum": [
+          "cadence_profile"
+        ],
+        "title": "RevenueAllocationMethod"
       },
       "RevenueMonthPoint": {
         "properties": {

@@ -17,6 +17,8 @@ export const queryKeys = {
   quoteIngestionRuns: ["quote-ingestion-runs"] as const,
   quoteIngestionRun: (runId: string) => ["quote-ingestion-run", runId] as const,
   forecastPolicy: ["forecast-policy"] as const,
+  forecastPhasingWorkspace: (filtersKey: string) =>
+    ["forecast-phasing-workspace", filtersKey] as const,
   projectForecast: (projectId: string) =>
     ["project-forecast", projectId] as const,
   forecastVersion: (versionId: string) =>
@@ -45,12 +47,16 @@ export const queryKeys = {
     projectId: string,
     options?: {
       disciplineId?: string;
+      quoteVersionId?: string;
+      limit?: number;
     },
   ) =>
     [
       "project-predictive-guidance",
       projectId,
       options?.disciplineId ?? "all",
+      options?.quoteVersionId ?? "current",
+      options?.limit ?? 25,
     ] as const,
   predictionRuns: (projectId: string) =>
     ["prediction-runs", projectId] as const,

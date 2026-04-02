@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import type {
   DisciplineRead,
+  ProjectPredictiveGuidanceResponse,
   QuoteRead,
   QuoteSummary,
   QuoteVersionRead,
@@ -81,10 +82,14 @@ export function QuoteBuilderWorkspace({
   projectId,
   projectName,
   quotes,
+  initialSelectedVersionId = null,
+  initialPredictiveGuidance = null,
 }: {
   projectId: string;
   projectName: string;
   quotes: QuoteSummary[];
+  initialSelectedVersionId?: string | null;
+  initialPredictiveGuidance?: ProjectPredictiveGuidanceResponse | null;
 }) {
   const api = getBrowserApiClient();
   const queryClient = useQueryClient();
@@ -93,7 +98,7 @@ export function QuoteBuilderWorkspace({
     quotes[0]?.id ?? null,
   );
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
-    null,
+    initialSelectedVersionId,
   );
   const [quoteNumber, setQuoteNumber] = useState("");
   const [quoteTitle, setQuoteTitle] = useState("");
@@ -155,6 +160,26 @@ export function QuoteBuilderWorkspace({
       ? queryKeys.quoteVersion(selectedVersionId)
       : ["quote-version", "none"],
   });
+
+  const predictiveGuidanceQuery = useQuery({
+    enabled: Boolean(selectedVersionId),
+    initialData:
+      selectedVersionId && selectedVersionId === initialSelectedVersionId
+        ? (initialPredictiveGuidance ?? undefined)
+        : undefined,
+    queryFn: async () =>
+      api.getProjectPredictiveGuidance(projectId, {
+        limit: 10,
+        ...(selectedVersionId ? { quoteVersionId: selectedVersionId } : {}),
+      }),
+    queryKey: selectedVersionId
+      ? queryKeys.projectPredictiveGuidance(projectId, {
+          quoteVersionId: selectedVersionId,
+          limit: 10,
+        })
+      : ["project-predictive-guidance", projectId, "none"],
+  });
+  const predictiveGuidance = predictiveGuidanceQuery.data ?? null;
 
   useEffect(() => {
     if (!versionQuery.data) {
@@ -750,6 +775,115 @@ export function QuoteBuilderWorkspace({
                   <option value="no">No</option>
                   <option value="yes">Yes</option>
                 </SelectField>
+              </div>
+
+              <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
+                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Comparable quote guidance
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Advisory only. Comparable evidence can inform this version, but quote sections and line items remain manual.
+                    </p>
+                  </div>
+                  {predictiveGuidanceQuery.data ? (
+                    <StatusBadge value={predictiveGuidanceQuery.data.fallbackTier} />
+                  ) : null}
+                </div>
+
+                {predictiveGuidanceQuery.isLoading ? (
+                  <p className="mt-4 text-sm text-slate-600">
+                    Loading comparable guidance for this quote version.
+                  </p>
+                ) : predictiveGuidanceQuery.isError ? (
+                  <p className="mt-4 text-sm text-amber-700">
+                    Comparable guidance is currently unavailable for this quote version.
+                  </p>
+                ) : predictiveGuidance ? (
+                  <>
+                    <div className="mt-4 grid gap-4 md:grid-cols-3">
+                      <SummaryStat
+                        label="Likely quote median"
+                        value={
+                          predictiveGuidance.likelyQuoteRange
+                            ? formatCurrency(
+                                predictiveGuidance.likelyQuoteRange.median,
+                                predictiveGuidance.likelyQuoteRange.currencyCode,
+                              )
+                            : "Not available"
+                        }
+                        hint={
+                          predictiveGuidance.likelyQuoteRange
+                            ? `${formatCurrency(
+                                predictiveGuidance.likelyQuoteRange.low,
+                                predictiveGuidance.likelyQuoteRange.currencyCode,
+                              )} to ${formatCurrency(
+                                predictiveGuidance.likelyQuoteRange.high,
+                                predictiveGuidance.likelyQuoteRange.currencyCode,
+                              )}`
+                            : "Comparable quote history is still thin"
+                        }
+                      />
+                      <SummaryStat
+                        label="Top comparables"
+                        value={predictiveGuidance.topComparables?.length ?? 0}
+                        hint={`${predictiveGuidance.modelInfo.comparableProjectsUsed} comparable projects used`}
+                      />
+                      <SummaryStat
+                        label="Feature readiness"
+                        value={`${predictiveGuidance.featureReadinessScore.toFixed(0)}%`}
+                        hint={`${predictiveGuidance.dataSufficiencyScore.toFixed(0)}% data sufficiency`}
+                      />
+                    </div>
+
+                    {predictiveGuidance.disciplineUsage.length > 0 ? (
+                      <div className="mt-4 overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 text-sm">
+                          <thead>
+                            <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              <th className="px-3 py-2">Discipline</th>
+                              <th className="px-3 py-2">Likely share</th>
+                              <th className="px-3 py-2">Likely amount</th>
+                              <th className="px-3 py-2">Confidence</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {predictiveGuidance.disciplineUsage
+                              .slice(0, 4)
+                              .map((item) => (
+                                <tr key={item.disciplineId}>
+                                  <td className="px-3 py-2 font-medium text-slate-900">
+                                    {item.disciplineName ??
+                                      item.disciplineCode ??
+                                      item.disciplineId}
+                                  </td>
+                                  <td className="px-3 py-2 text-slate-700">
+                                    {item.predictedSharePct.toFixed(1)}%
+                                  </td>
+                                  <td className="px-3 py-2 text-slate-700">
+                                    {item.predictedAmountMedian == null
+                                      ? "Not available"
+                                      : formatCurrency(
+                                          item.predictedAmountMedian,
+                                          predictiveGuidance.target.quoteCurrencyCode,
+                                        )}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <StatusBadge value={item.confidence} />
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-600">
+                    No comparable guidance is available for this quote version yet.
+                  </p>
+                )}
               </div>
             </div>
           </SectionCard>

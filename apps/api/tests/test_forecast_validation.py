@@ -640,7 +640,27 @@ def test_validation_prediction_scenarios_order_outputs_but_flag_lost_schedule_sh
         scenario_months=[item["month"] for item in downside["monthlyRevenueSpread"]],
         forecast_months=[item["month"] for item in current_version["projectMonthlyRollups"]],
     )
-    assert "scenario_schedule_shift_not_reflected_in_forecast" in flags
+    assert "scenario_schedule_shift_not_reflected_in_forecast" not in flags
+    forecast_start_month = current_version["projectMonthlyRollups"][0]["month"]
+    scenario_start_month = downside["monthlyRevenueSpread"][0]["month"]
+    assert forecast_start_month >= scenario_start_month
+
+    dashboard_response = client.get(
+        "/api/v1/dashboards/operational?projectId=project_val_scenario_target&scenarioKey=downside",
+        headers=_admin_headers(client),
+    )
+    assert dashboard_response.status_code == 200, dashboard_response.text
+    dashboard_payload = dashboard_response.json()
+    sales_stage = next(
+        item for item in dashboard_payload["salesPipeline"]["stages"] if item["status"] == "bid"
+    )
+    revenue_row = dashboard_payload["forecastRevenue"]["projectRows"][0]
+    dataset_project = dashboard_payload["forecastDataset"]["projects"][0]
+
+    assert sales_stage["quoteAmount"] == 132000.0
+    assert dataset_project["projectId"] == "project_val_scenario_target"
+    assert dataset_project["totalForecastValue"] == current_version["totalAmount"]
+    assert revenue_row["totalRevenue"] == current_version["totalAmount"]
 
 
 def test_validation_edge_case_overburn_actuals_need_operator_attention(

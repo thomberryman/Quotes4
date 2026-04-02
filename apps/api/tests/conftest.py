@@ -8,15 +8,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 DEFAULT_TEST_DB_PATH = Path(gettempdir()) / f"quotes4_api_tests_{os.getpid()}.sqlite3"
-os.environ.setdefault("APP_ENV", "test")
-os.environ.setdefault("DATABASE_URL", f"sqlite:///{DEFAULT_TEST_DB_PATH}")
-os.environ.setdefault("AUTH_INVITE_SECRET", "quotes4-test-secret")
-os.environ.setdefault("DEV_ADMIN_EMAIL", "admin@quotes4.dev")
-os.environ.setdefault("DEV_ADMIN_PASSWORD", "quotes4-admin-password")
-os.environ.setdefault("WORKER_CALLBACK_TOKEN", "quotes4-test-worker-token")
-os.environ.setdefault("S3_ENDPOINT", "http://storage.test")
-os.environ.setdefault("S3_BUCKET", "quotes4-test-assets")
-os.environ.setdefault("STORAGE_PUBLIC_BASE_URL", "http://storage.test/quotes4-test-assets")
+os.environ["APP_ENV"] = "test"
+os.environ["DATABASE_URL"] = f"sqlite:///{DEFAULT_TEST_DB_PATH}"
+os.environ["AUTH_INVITE_SECRET"] = "quotes4-test-secret"
+os.environ["DEV_ADMIN_EMAIL"] = "admin@quotes4.dev"
+os.environ["DEV_ADMIN_PASSWORD"] = "quotes4-admin-password"
+os.environ["WORKER_CALLBACK_TOKEN"] = "quotes4-test-worker-token"
+os.environ["S3_ENDPOINT"] = "http://storage.test"
+os.environ["S3_BUCKET"] = "quotes4-test-assets"
+os.environ["STORAGE_PUBLIC_BASE_URL"] = "http://storage.test/quotes4-test-assets"
 
 
 def _resolve_test_db_path() -> Path:

@@ -1,5 +1,7 @@
 import type { ProjectStatus } from "@quotes4/contracts";
 
+export type RevenueAllocationMethod = "cadence_profile";
+
 export interface SelectedFileLike {
   name: string;
   size: number;
@@ -8,10 +10,14 @@ export interface SelectedFileLike {
 
 export interface ProjectCreateFormValues {
   code: string;
+  cadenceProfileType: string;
   description: string;
   endDate: string;
+  estimatedExecutionEndDate: string;
+  estimatedExecutionStartDate: string;
   name: string;
   quoteCurrencyCode: string;
+  revenueAllocationMethod: RevenueAllocationMethod;
   startDate: string;
   status: ProjectStatus;
   bidDueDate: string;
@@ -95,6 +101,14 @@ export function validateProjectCreateForm(
 
   if (values.startDate && values.endDate && values.endDate < values.startDate) {
     return "Project end date cannot be earlier than start date.";
+  }
+
+  if (
+    values.estimatedExecutionStartDate &&
+    values.estimatedExecutionEndDate &&
+    values.estimatedExecutionEndDate < values.estimatedExecutionStartDate
+  ) {
+    return "Estimated execution end date cannot be earlier than estimated execution start date.";
   }
 
   return null;

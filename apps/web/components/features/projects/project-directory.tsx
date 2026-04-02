@@ -26,6 +26,16 @@ import {
 } from "@/lib/forms/validation";
 import type { TableColumn } from "@/lib/navigation/types";
 
+const CADENCE_PROFILE_OPTIONS = [
+  { label: "Flat / equal", value: "flat_equal" },
+  { label: "Front-loaded", value: "front_loaded" },
+  { label: "Back-loaded", value: "back_loaded" },
+  { label: "Mid-loaded", value: "mid_loaded" },
+  { label: "Milestone-based", value: "milestone_based" },
+  { label: "Episodic", value: "episodic" },
+  { label: "Discipline-sequenced", value: "discipline_sequenced" }
+] as const;
+
 const PROJECT_STATUS_OPTIONS: Array<{ label: string; value: ProjectStatus }> = [
   { label: "Bid", value: "bid" },
   { label: "Awarded", value: "awarded" },
@@ -77,6 +87,9 @@ const columns: TableColumn<ProjectSummary>[] = [
         <Link className="text-slate-900 underline" href={`/projects/${project.id}/forecast`}>
           Forecast
         </Link>
+        <Link className="text-slate-900 underline" href={`/projects/phasing?projectId=${project.id}`}>
+          Phasing
+        </Link>
         <Link className="text-slate-900 underline" href={`/projects/${project.id}/comparables`}>
           Comparables
         </Link>
@@ -91,10 +104,14 @@ function createEmptyProjectForm(): ProjectCreateFormValues {
     code: "",
     description: "",
     endDate: "",
+    estimatedExecutionEndDate: "",
+    estimatedExecutionStartDate: "",
     name: "",
     quoteCurrencyCode: "",
+    revenueAllocationMethod: "cadence_profile",
     startDate: "",
-    status: "bid"
+    status: "bid",
+    cadenceProfileType: "",
   };
 }
 
@@ -210,7 +227,11 @@ export function ProjectDirectory({ projects: initialProjects }: { projects: Proj
           quoteCurrencyCode: toOptionalValue(createForm.quoteCurrencyCode)?.toUpperCase() ?? null,
           startDate: toOptionalValue(createForm.startDate),
           endDate: toOptionalValue(createForm.endDate),
-          bidDueDate: toOptionalValue(createForm.bidDueDate)
+          bidDueDate: toOptionalValue(createForm.bidDueDate),
+          estimatedExecutionStartDate: toOptionalValue(createForm.estimatedExecutionStartDate),
+          estimatedExecutionEndDate: toOptionalValue(createForm.estimatedExecutionEndDate),
+          revenueAllocationMethod: createForm.revenueAllocationMethod,
+          cadenceProfileType: toOptionalValue(createForm.cadenceProfileType)
         })
         .then((project) => {
           setProjects((current) => [toProjectSummary(project), ...current]);
@@ -295,7 +316,8 @@ export function ProjectDirectory({ projects: initialProjects }: { projects: Proj
                   Manual project intake
                 </h2>
                 <p className="text-sm text-slate-600">
-                  Register a project before a bid PDF is ready to import.
+                  Register a project before a bid PDF is ready to import. Commercial quote timing
+                  stays separate from the execution period and monthly phasing.
                 </p>
               </div>
               <Button onClick={closeCreateDialog} type="button">
@@ -308,7 +330,9 @@ export function ProjectDirectory({ projects: initialProjects }: { projects: Proj
               ) : null}
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 Use this path when the project exists operationally but the bid has not been
-                received or imported yet.
+                received or imported yet. Quote entry timing stays separate from the execution
+                period. Set the base phasing profile here; manual month overrides happen later in
+                Revenue Phasing.
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <TextInput
@@ -354,17 +378,35 @@ export function ProjectDirectory({ projects: initialProjects }: { projects: Proj
                   value={createForm.bidDueDate}
                 />
                 <TextInput
-                  label="Start date"
-                  onChange={(event) => updateCreateForm("startDate", event.target.value)}
+                  label="Estimated execution start"
+                  onChange={(event) =>
+                    updateCreateForm("estimatedExecutionStartDate", event.target.value)
+                  }
                   type="date"
-                  value={createForm.startDate}
+                  value={createForm.estimatedExecutionStartDate}
                 />
                 <TextInput
-                  label="End date"
-                  onChange={(event) => updateCreateForm("endDate", event.target.value)}
+                  label="Estimated execution end"
+                  onChange={(event) =>
+                    updateCreateForm("estimatedExecutionEndDate", event.target.value)
+                  }
                   type="date"
-                  value={createForm.endDate}
+                  value={createForm.estimatedExecutionEndDate}
                 />
+                <SelectField
+                  label="Base phasing profile"
+                  onChange={(event) =>
+                    updateCreateForm("cadenceProfileType", event.target.value)
+                  }
+                  value={createForm.cadenceProfileType}
+                >
+                  <option value="">System default (prediction + schedule)</option>
+                  {CADENCE_PROFILE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </SelectField>
               </div>
               <TextAreaField
                 label="Description"

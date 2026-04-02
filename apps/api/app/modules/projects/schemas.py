@@ -5,7 +5,12 @@ from datetime import date, datetime
 from pydantic import Field
 
 from app.core.schemas import BaseSchema
-from app.models.enums import ProjectOutcomeType, ProjectPartyRole, ProjectStatus
+from app.models.enums import (
+    ProjectOutcomeType,
+    ProjectPartyRole,
+    ProjectStatus,
+    RevenueAllocationMethod,
+)
 from app.modules.comparables.schemas import BenchmarkSummary
 
 
@@ -105,6 +110,13 @@ class ProjectRead(BaseSchema):
     start_date: date | None = None
     end_date: date | None = None
     bid_due_date: date | None = None
+    estimated_execution_start_date: date | None = None
+    estimated_execution_end_date: date | None = None
+    revenue_allocation_method: RevenueAllocationMethod = (
+        RevenueAllocationMethod.cadence_profile
+    )
+    cadence_profile_type: str | None = None
+    cadence_profile_data: dict[str, object] | None = None
     bid_submitted_at: datetime | None = None
     awarded_at: datetime | None = None
     lost_at: datetime | None = None
@@ -139,6 +151,13 @@ class ProjectCreateRequest(BaseSchema):
     start_date: date | None = None
     end_date: date | None = None
     bid_due_date: date | None = None
+    estimated_execution_start_date: date | None = None
+    estimated_execution_end_date: date | None = None
+    revenue_allocation_method: RevenueAllocationMethod = (
+        RevenueAllocationMethod.cadence_profile
+    )
+    cadence_profile_type: str | None = None
+    cadence_profile_data: dict[str, object] | None = None
 
 
 class ProjectUpdateRequest(BaseSchema):
@@ -154,6 +173,11 @@ class ProjectUpdateRequest(BaseSchema):
     start_date: date | None = None
     end_date: date | None = None
     bid_due_date: date | None = None
+    estimated_execution_start_date: date | None = None
+    estimated_execution_end_date: date | None = None
+    revenue_allocation_method: RevenueAllocationMethod | None = None
+    cadence_profile_type: str | None = None
+    cadence_profile_data: dict[str, object] | None = None
     bid_submitted_at: datetime | None = None
     awarded_at: datetime | None = None
     lost_at: datetime | None = None

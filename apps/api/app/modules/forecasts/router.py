@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import CurrentSubject, require_permissions
@@ -10,7 +10,13 @@ from app.core.db import get_db_session
 from app.modules.forecasts.schemas import (
     ForecastAccuracySummaryRead,
     ForecastDetailRead,
+    ForecastPhasingDraftRead,
+    ForecastPhasingDraftUpsertRequest,
     ForecastLineAllocationsReplaceRequest,
+    ForecastPhasingPreviewRead,
+    ForecastPhasingPreviewRequest,
+    ForecastPhasingRowUpdateRequest,
+    ForecastPhasingWorkspaceRead,
     ForecastPolicySummary,
     ForecastRecalculateResponse,
     ForecastVersionCreateRequest,
@@ -63,6 +69,79 @@ def get_project_forecast(
     return forecast
 
 
+@router.get("/phasing-workspace", response_model=ForecastPhasingWorkspaceRead)
+def get_forecast_phasing_workspace(
+    session: DbSession,
+    _subject: ForecastsReadSubject,
+    from_month: str | None = Query(default=None, alias="fromMonth"),
+    to_month: str | None = Query(default=None, alias="toMonth"),
+    client_id: str | None = Query(default=None, alias="clientId"),
+    project_id: str | None = Query(default=None, alias="projectId"),
+    discipline_id: str | None = Query(default=None, alias="disciplineId"),
+    status: str | None = Query(default=None),
+    scenario_key: str | None = Query(default=None, alias="scenarioKey"),
+    row_mode: str = Query(default="project", alias="rowMode"),
+) -> ForecastPhasingWorkspaceRead:
+    return forecast_service.get_phasing_workspace(
+        session,
+        from_month=from_month,
+        to_month=to_month,
+        client_id=client_id,
+        project_id=project_id,
+        discipline_id=discipline_id,
+        status=status,
+        scenario_key=scenario_key,
+        row_mode=row_mode,
+    )
+
+
+@router.post("/phasing-workspace/preview", response_model=ForecastPhasingPreviewRead)
+def preview_forecast_phasing_action(
+    payload: ForecastPhasingPreviewRequest,
+    session: DbSession,
+    _subject: ForecastsReadSubject,
+) -> ForecastPhasingPreviewRead:
+    return forecast_service.preview_phasing_action(session, payload)
+
+
+@router.put("/projects/{project_id}/phasing-draft", response_model=ForecastPhasingDraftRead)
+def update_project_forecast_phasing_draft(
+    project_id: str,
+    payload: ForecastPhasingDraftUpsertRequest,
+    session: DbSession,
+    subject: ForecastsWriteSubject,
+) -> ForecastPhasingDraftRead:
+    draft = forecast_service.upsert_phasing_draft(
+        session,
+        project_id,
+        payload,
+        actor_id=subject.user.id,
+    )
+    session.commit()
+    return draft
+
+
+@router.delete("/projects/{project_id}/phasing-draft", response_model=ForecastPhasingWorkspaceRead)
+def discard_project_forecast_phasing_draft(
+    project_id: str,
+    session: DbSession,
+    subject: ForecastsWriteSubject,
+    forecast_version_id: str | None = Query(default=None, alias="forecastVersionId"),
+    row_mode: str = Query(alias="rowMode"),
+    discipline_id: str | None = Query(default=None, alias="disciplineId"),
+) -> ForecastPhasingWorkspaceRead:
+    workspace = forecast_service.discard_phasing_draft(
+        session,
+        project_id,
+        forecast_version_id=forecast_version_id,
+        row_mode=row_mode,
+        discipline_id=discipline_id,
+        actor_id=subject.user.id,
+    )
+    session.commit()
+    return workspace
+
+
 @router.post("/projects/{project_id}/versions", response_model=ForecastVersionRead, status_code=201)
 def create_or_clone_forecast_version(
     project_id: str,
@@ -78,6 +157,23 @@ def create_or_clone_forecast_version(
     )
     session.commit()
     return version
+
+
+@router.put("/projects/{project_id}/phasing", response_model=ForecastPhasingWorkspaceRead)
+def update_project_forecast_phasing(
+    project_id: str,
+    payload: ForecastPhasingRowUpdateRequest,
+    session: DbSession,
+    subject: ForecastsWriteSubject,
+) -> ForecastPhasingWorkspaceRead:
+    workspace = forecast_service.update_phasing_row(
+        session,
+        project_id,
+        payload,
+        actor_id=subject.user.id,
+    )
+    session.commit()
+    return workspace
 
 
 @router.get("/versions/{version_id}", response_model=ForecastVersionRead)

@@ -830,10 +830,131 @@ export function ProjectScenarioWorkspace({
         </SectionCard>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <SectionCard
-          title="Discipline Outlook"
-          description="Scenario-specific discipline value, variance, and overrun view."
+          title="Advisory Spend Outlook"
+          description="Scenario-specific cost guidance built from comparable mapped cost actuals with current posted spend as the floor."
+          actions={
+            selectedScenario?.spendSummary ? (
+              <StatusBadge value={selectedScenario.spendSummary.confidence} />
+            ) : undefined
+          }
+        >
+          {selectedScenario?.spendSummary ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <SummaryStat
+                  label="Predicted total spend"
+                  value={
+                    selectedScenario.spendSummary.predictedTotalCost != null
+                      ? formatCurrency(
+                          selectedScenario.spendSummary.predictedTotalCost,
+                          currencyCode,
+                        )
+                      : "Not available"
+                  }
+                  hint={formatStatusLabel(selectedScenario.spendSummary.basis)}
+                />
+                <SummaryStat
+                  label="Current spend to date"
+                  value={formatCurrency(
+                    selectedScenario.spendSummary.currentActualCost ?? 0,
+                    currencyCode,
+                  )}
+                  hint={`${selectedScenario.spendSummary.confidenceScore.toFixed(0)} confidence score`}
+                />
+                <SummaryStat
+                  label="Remaining predicted spend"
+                  value={
+                    selectedScenario.spendSummary.predictedRemainingCost != null
+                      ? formatCurrency(
+                          selectedScenario.spendSummary.predictedRemainingCost,
+                          currencyCode,
+                        )
+                      : "Not available"
+                  }
+                  hint={formatStatusLabel(selectedScenario.spendSummary.fallbackTier)}
+                />
+                <SummaryStat
+                  label="Implied margin"
+                  value={
+                    selectedScenario.spendSummary.impliedMarginAmount != null
+                      ? formatCurrency(
+                          selectedScenario.spendSummary.impliedMarginAmount,
+                          currencyCode,
+                        )
+                      : "Not available"
+                  }
+                  hint={
+                    selectedScenario.spendSummary.impliedMarginPct != null
+                      ? formatPercent(selectedScenario.spendSummary.impliedMarginPct)
+                      : "Scenario quote median unavailable"
+                  }
+                />
+              </div>
+
+              {selectedScenario.spendSummary.disciplineSpend?.length ? (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        <th className="px-4 py-3">Discipline</th>
+                        <th className="px-4 py-3">Current spend</th>
+                        <th className="px-4 py-3">Predicted total</th>
+                        <th className="px-4 py-3">Remaining spend</th>
+                        <th className="px-4 py-3">Confidence</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 bg-white">
+                      {selectedScenario.spendSummary.disciplineSpend.map((item) => (
+                        <tr key={item.disciplineId}>
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-slate-900">
+                              {item.disciplineName ?? item.disciplineCode ?? item.disciplineId}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {item.reasoning?.[0] ?? `${item.sampleSize} comparable projects`}
+                            </p>
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
+                            {formatCurrency(item.currentActualCost ?? 0, currencyCode)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
+                            {item.predictedTotalCost != null
+                              ? formatCurrency(item.predictedTotalCost, currencyCode)
+                              : "Not available"}
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
+                            {item.predictedRemainingCost != null
+                              ? formatCurrency(item.predictedRemainingCost, currencyCode)
+                              : "Not available"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge value={item.confidence} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState
+                  title="No spend discipline guidance"
+                  description="Comparable cost history is still too thin to allocate scenario spend by discipline."
+                />
+              )}
+            </>
+          ) : (
+            <EmptyState
+              title="No advisory spend outlook"
+              description="Refresh the prediction run after mapped cost actuals are available to generate advisory spend guidance."
+            />
+          )}
+        </SectionCard>
+
+        <SectionCard
+          title="Revenue Outturn Outlook"
+          description="Scenario-specific predicted revenue outturn, variance, and overrun view. This remains advisory and separate from spend."
         >
           {selectedScenario?.disciplineUsage?.length ? (
             <div className="overflow-x-auto">
@@ -875,53 +996,53 @@ export function ProjectScenarioWorkspace({
             </div>
           ) : (
             <EmptyState
-              title="No discipline scenario output"
-              description="Refresh the prediction run to generate discipline-level scenario outputs."
-            />
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title="Monthly Revenue Spread"
-          description="Scenario-specific monthly spread used when promoting a forecast draft."
-        >
-          {selectedScenario?.monthlyRevenueSpread?.length ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead>
-                  <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    <th className="px-4 py-3">Month</th>
-                    <th className="px-4 py-3">Median share</th>
-                    <th className="px-4 py-3">Median amount</th>
-                    <th className="px-4 py-3">Profile</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
-                  {selectedScenario.monthlyRevenueSpread.map((item) => (
-                    <tr key={item.month}>
-                      <td className="px-4 py-3 font-medium text-slate-900">{item.month}</td>
-                      <td className="px-4 py-3 text-slate-700">{formatPercent(item.medianSharePct)}</td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {item.predictedAmountMedian != null
-                          ? formatCurrency(item.predictedAmountMedian, currencyCode)
-                          : "Not available"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge value={item.spreadProfile ?? "even"} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState
-              title="No monthly spread output"
-              description="The current project still needs more schedule structure for monthly scenario planning."
+              title="No revenue outturn output"
+              description="Refresh the prediction run to generate discipline-level revenue outturn guidance."
             />
           )}
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Monthly Revenue Spread"
+        description="Scenario-specific monthly spread used when promoting a forecast draft."
+      >
+        {selectedScenario?.monthlyRevenueSpread?.length ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <th className="px-4 py-3">Month</th>
+                  <th className="px-4 py-3">Median share</th>
+                  <th className="px-4 py-3">Median amount</th>
+                  <th className="px-4 py-3">Profile</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {selectedScenario.monthlyRevenueSpread.map((item) => (
+                  <tr key={item.month}>
+                    <td className="px-4 py-3 font-medium text-slate-900">{item.month}</td>
+                    <td className="px-4 py-3 text-slate-700">{formatPercent(item.medianSharePct)}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {item.predictedAmountMedian != null
+                        ? formatCurrency(item.predictedAmountMedian, currencyCode)
+                        : "Not available"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge value={item.spreadProfile ?? "even"} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState
+            title="No monthly spread output"
+            description="The current project still needs more schedule structure for monthly scenario planning."
+          />
+        )}
+      </SectionCard>
     </div>
   );
 }

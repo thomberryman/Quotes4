@@ -28,7 +28,11 @@ import {
   VarianceDivergingChart,
 } from "./dashboard-charts";
 import { DrilldownDrawer } from "./drilldown-drawer";
+import { ForecastRevenueWorkspace as ForecastRevenueReport } from "./forecast-revenue-workspace";
 import {
+  buildDisciplineRevenueTrendsFromDataset,
+  buildForecastRevenueFromDataset,
+  buildMonthlyRevenueForecastFromDataset,
   type DashboardFilters,
   type DashboardView,
   formatDashboardMonth,
@@ -252,6 +256,15 @@ export function OperationalDashboardPage() {
   });
 
   const dashboard = dashboardQuery.data ?? null;
+  const forecastRevenueView = dashboard
+    ? buildForecastRevenueFromDataset(dashboard.forecastDataset)
+    : null;
+  const monthlyRevenueForecastView = dashboard
+    ? buildMonthlyRevenueForecastFromDataset(dashboard.forecastDataset)
+    : null;
+  const disciplineRevenueTrendsView = dashboard
+    ? buildDisciplineRevenueTrendsFromDataset(dashboard.forecastDataset)
+    : null;
   const filterOptions = dashboard?.filterOptions;
   const selectedProjectLabel =
     filterOptions?.projects.find((item) => item.id === filters.projectId)?.label ??
@@ -383,6 +396,25 @@ export function OperationalDashboardPage() {
             })}
           </section>
 
+          <SectionCard
+            actions={
+              <Button
+                data-testid="dashboard-open-forecast-revenue-drilldown"
+                onClick={() => openPanel("monthly_forecast")}
+                type="button"
+                variant="secondary"
+              >
+                Open drilldown
+              </Button>
+            }
+            description="Read-only month-by-month revenue reporting by status and project. Use Revenue Phasing for spreadsheet-style month edits and manual overrides."
+            title="Forecast Revenue Report"
+          >
+            {forecastRevenueView ? (
+              <ForecastRevenueReport forecastRevenue={forecastRevenueView} />
+            ) : null}
+          </SectionCard>
+
           <section className="grid gap-6 xl:grid-cols-2">
             <DashboardPanel
               description="Quote totals by status, with weighted value called out inside each stage."
@@ -433,12 +465,12 @@ export function OperationalDashboardPage() {
             </DashboardPanel>
 
             <DashboardPanel
-              description="Gross and weighted forecast values across the active month window."
+              description="Unified forecast totals across the active month window."
               onOpen={() => openPanel("monthly_forecast")}
               testId="dashboard-open-monthly_forecast"
               title="Monthly Revenue Forecast"
             >
-              {dashboard.monthlyRevenueForecast.months.length > 0 ? (
+              {monthlyRevenueForecastView && monthlyRevenueForecastView.months.length > 0 ? (
                 <div
                   role="button"
                   tabIndex={0}
@@ -451,8 +483,8 @@ export function OperationalDashboardPage() {
                   }}
                 >
                   <RevenueLineChart
-                    currencyCode={dashboard.monthlyRevenueForecast.currencyCode}
-                    months={dashboard.monthlyRevenueForecast.months}
+                    currencyCode={monthlyRevenueForecastView.currencyCode}
+                    months={monthlyRevenueForecastView.months}
                   />
                 </div>
               ) : (
@@ -624,12 +656,12 @@ export function OperationalDashboardPage() {
             </DashboardPanel>
 
             <DashboardPanel
-              description="Monthly weighted forecast by discipline, stacked so the workload mix is visible at a glance."
+              description="Monthly forecast totals by discipline, stacked so the workload mix stays visible at a glance."
               onOpen={() => openPanel("discipline_trends")}
               testId="dashboard-open-discipline_trends"
               title="Discipline Revenue Trends"
             >
-              {dashboard.disciplineRevenueTrends.months.length > 0 ? (
+              {disciplineRevenueTrendsView && disciplineRevenueTrendsView.months.length > 0 ? (
                 <div
                   role="button"
                   tabIndex={0}
@@ -642,9 +674,9 @@ export function OperationalDashboardPage() {
                   }}
                 >
                   <DisciplineStackedChart
-                    currencyCode={dashboard.disciplineRevenueTrends.currencyCode}
-                    months={dashboard.disciplineRevenueTrends.months}
-                    series={dashboard.disciplineRevenueTrends.series}
+                    currencyCode={disciplineRevenueTrendsView.currencyCode}
+                    months={disciplineRevenueTrendsView.months}
+                    series={disciplineRevenueTrendsView.series}
                   />
                 </div>
               ) : (

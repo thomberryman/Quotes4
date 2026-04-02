@@ -53,6 +53,10 @@ class PasswordHasher:
         return self._hasher.hash(plain_password)
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        if hashed_password.startswith("fallback-sha256$"):
+            digest = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+            return hmac.compare_digest(hashed_password, f"fallback-sha256${digest}")
+
         if self._hasher is None:
             return hashed_password == self.hash_password(plain_password)
 

@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { ProjectWorkspaceNav } from "@/components/features/projects/project-workspace-nav";
 import { QuoteBuilderWorkspace } from "@/components/features/quotes/quote-builder-workspace";
-import { getProject } from "@/lib/api/projects";
+import { getProject, getProjectPredictiveGuidance } from "@/lib/api/projects";
 import { listQuotes } from "@/lib/api/quotes";
 
 export default async function QuoteBuilderPage({
@@ -14,6 +14,13 @@ export default async function QuoteBuilderPage({
     getProject(projectId),
     listQuotes(projectId),
   ]);
+  const initialSelectedVersionId = quotes.items[0]?.currentVersionId ?? null;
+  const initialPredictiveGuidance = initialSelectedVersionId
+    ? await getProjectPredictiveGuidance(projectId, {
+        quoteVersionId: initialSelectedVersionId,
+        limit: 10,
+      })
+    : null;
 
   return (
     <>
@@ -35,6 +42,8 @@ export default async function QuoteBuilderPage({
         projectId={projectId}
         projectName={project.name}
         quotes={quotes.items}
+        initialSelectedVersionId={initialSelectedVersionId}
+        initialPredictiveGuidance={initialPredictiveGuidance}
       />
     </>
   );

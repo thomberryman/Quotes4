@@ -18,7 +18,12 @@ from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, IdentifierMixin, JsonObjectType, TimestampMixin
-from app.models.enums import ProjectOutcomeType, ProjectPartyRole, ProjectStatus
+from app.models.enums import (
+    ProjectOutcomeType,
+    ProjectPartyRole,
+    ProjectStatus,
+    RevenueAllocationMethod,
+)
 
 if TYPE_CHECKING:
     from app.models.auth import User
@@ -50,6 +55,23 @@ class Project(IdentifierMixin, TimestampMixin, Base):
     start_date: Mapped[date | None] = mapped_column(Date(), nullable=True)
     end_date: Mapped[date | None] = mapped_column(Date(), nullable=True)
     bid_due_date: Mapped[date | None] = mapped_column(Date(), nullable=True)
+    estimated_execution_start_date: Mapped[date | None] = mapped_column(Date(), nullable=True)
+    estimated_execution_end_date: Mapped[date | None] = mapped_column(Date(), nullable=True)
+    revenue_allocation_method: Mapped[RevenueAllocationMethod] = mapped_column(
+        SqlEnum(
+            RevenueAllocationMethod,
+            name="revenue_allocation_method",
+            native_enum=False,
+            length=48,
+        ),
+        default=RevenueAllocationMethod.cadence_profile,
+    )
+    cadence_profile_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    cadence_profile_data_json: Mapped[dict[str, object] | None] = mapped_column(
+        "cadence_profile_data",
+        JsonObjectType,
+        nullable=True,
+    )
     bid_submitted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -107,8 +129,19 @@ class Project(IdentifierMixin, TimestampMixin, Base):
     audit_logs: Mapped[list[AuditLog]] = relationship(back_populates="project")
 
     __table_args__ = (
+        CheckConstraint(
+            "estimated_execution_end_date IS NULL "
+            "OR estimated_execution_start_date IS NULL "
+            "OR estimated_execution_end_date >= estimated_execution_start_date",
+            name="project_estimated_execution_dates",
+        ),
         Index("ix_projects_status_updated_at", "status", "updated_at"),
         Index("ix_projects_created_at", "created_at"),
+        Index(
+            "ix_projects_estimated_execution_dates",
+            "estimated_execution_start_date",
+            "estimated_execution_end_date",
+        ),
     )
 
 

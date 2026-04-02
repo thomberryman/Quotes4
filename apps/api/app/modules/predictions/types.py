@@ -30,6 +30,7 @@ class PredictionContext:
     quote_line_items: list[QuoteLineItem]
     schedule_ranges: list[ProjectScheduleRange]
     actuals: ActualsSummary
+    project_actuals_by_project_id: dict[str, ActualsSummary]
     request_context: dict[str, Any]
 
 

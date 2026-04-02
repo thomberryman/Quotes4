@@ -6,6 +6,7 @@ This repository is for a multi-user post production quoting, forecasting, and ac
 
 Prioritize operational clarity, maintainability, auditability, and explainable business logic over clever or opaque solutions.
 
+
 ## Product Scope
 
 The system must support:
@@ -21,6 +22,7 @@ The system must support:
 
 ## Working Rules
 
+- Always start by producing a plan before making code changes.
 - Plan first for non-trivial work.
 - If a task affects multiple modules or is likely to take a while, create or update `PLANS.md` before coding.
 - Prefer practical, maintainable solutions over clever ones.

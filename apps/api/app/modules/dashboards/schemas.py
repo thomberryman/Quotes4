@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from app.core.schemas import BaseSchema
+from app.modules.forecasts.schemas import DashboardForecastDatasetContractRead
 
 
 class DashboardOption(BaseSchema):
@@ -66,6 +67,80 @@ class RevenueMonthPoint(BaseSchema):
 class MonthlyRevenueForecastSection(BaseSchema):
     currency_code: str
     months: list[RevenueMonthPoint]
+
+
+class ForecastRevenueMonthStatusPoint(BaseSchema):
+    month: str
+    bid_amount: float
+    weighted_bid_amount: float
+    awarded_amount: float
+    active_amount: float
+    complete_amount: float
+    booked_amount: float
+    lost_amount: float
+
+
+class ForecastRevenueStatusTotal(BaseSchema):
+    status: str
+    label: str
+    project_count: int
+    total_amount: float
+    weighted_total_amount: float
+
+
+class ForecastRevenueProjectMonthValue(BaseSchema):
+    month: str
+    amount: float
+    weighted_amount: float
+    actual_amount: float | None = None
+    booked_amount: float | None = None
+
+
+class ForecastRevenueDisciplineRow(BaseSchema):
+    discipline_id: str
+    discipline_name: str
+    base_phasing_profile: str
+    forecast_method: str
+    line_count: int
+    manual_override_line_count: int
+    total_amount: float
+    weighted_total_amount: float
+    month_values: list[ForecastRevenueProjectMonthValue]
+
+
+class ForecastRevenueProjectRow(BaseSchema):
+    project_id: str
+    project_name: str
+    client_id: str
+    client_name: str
+    status: str
+    quote_entry_date: str | None = None
+    execution_start_date: str | None = None
+    execution_end_date: str | None = None
+    quote_to_execution_lead_months: int | None = None
+    spanning_month_count: int
+    base_phasing_profile: str
+    forecast_method: str
+    manual_override_line_count: int
+    total_revenue: float
+    window_revenue: float
+    weighted_total_revenue: float
+    window_weighted_revenue: float
+    forecast_version_id: str | None = None
+    forecast_status: str | None = None
+    scenario_key: str | None = None
+    change_summary: dict[str, object] | None = None
+    explanation_summary: dict[str, object] | None = None
+    month_values: list[ForecastRevenueProjectMonthValue]
+    discipline_rows: list[ForecastRevenueDisciplineRow]
+
+
+class ForecastRevenueDashboardSection(BaseSchema):
+    currency_code: str
+    months: list[str]
+    monthly_status_totals: list[ForecastRevenueMonthStatusPoint]
+    overall_status_totals: list[ForecastRevenueStatusTotal]
+    project_rows: list[ForecastRevenueProjectRow]
 
 
 class AwardedLostMonthPoint(BaseSchema):
@@ -170,7 +245,9 @@ class OperationalDashboardResponse(BaseSchema):
     filter_options: DashboardFilterOptions
     summary_cards: list[DashboardSummaryCard]
     sales_pipeline: SalesPipelineSection
+    forecast_dataset: DashboardForecastDatasetContractRead
     monthly_revenue_forecast: MonthlyRevenueForecastSection
+    forecast_revenue: ForecastRevenueDashboardSection
     awarded_lost_trend: AwardedLostTrendSection
     quote_actual_variance: QuoteActualVarianceSection
     client_project_history: ClientProjectHistorySection

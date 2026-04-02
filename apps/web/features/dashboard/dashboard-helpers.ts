@@ -1,6 +1,7 @@
 import type {
   DashboardDrilldownColumn,
   DashboardQueryOptions,
+  OperationalDashboardResponse,
 } from "@quotes4/contracts";
 
 import {
@@ -235,4 +236,234 @@ export function getDashboardCsvFileName(
   filters: DashboardFilters,
 ): string {
   return `quotes4-${view}-${filters.fromMonth}-to-${filters.toMonth}.csv`;
+}
+
+function formatDatasetDisciplineLabel(value: string | null): string {
+  if (!value) {
+    return "Unassigned";
+  }
+
+  return value
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
+function mapDatasetStatusToLegacyStatus(
+  status: OperationalDashboardResponse["forecastDataset"]["projects"][number]["status"],
+): "bid" | "awarded" | "lost" {
+  if (status === "estimated") {
+    return "bid";
+  }
+
+  return status;
+}
+
+function summarizeMethods(methods: string[]): string {
+  const unique = Array.from(new Set(methods.filter(Boolean)));
+  if (unique.length === 0) {
+    return "none";
+  }
+  if (unique.length === 1) {
+    return unique[0] as string;
+  }
+  return "mixed";
+}
+
+export function buildMonthlyRevenueForecastFromDataset(
+  dataset: OperationalDashboardResponse["forecastDataset"],
+): OperationalDashboardResponse["monthlyRevenueForecast"] {
+  return {
+    currencyCode: dataset.currencyCode,
+    months: dataset.aggregations.totalsByMonth.map((item) => ({
+      month: item.month,
+      grossAmount: item.revenueValue,
+      weightedAmount: 0,
+      lowAmount: null,
+      highAmount: null,
+      actualAmount: null,
+      bookedAmount: null,
+    })),
+  };
+}
+
+export function buildDisciplineRevenueTrendsFromDataset(
+  dataset: OperationalDashboardResponse["forecastDataset"],
+): OperationalDashboardResponse["disciplineRevenueTrends"] {
+  const monthKeys = dataset.aggregations.totalsByMonth.map((item) => item.month);
+  const grouped: Record<string, Record<string, number>> = {};
+
+  dataset.monthlyRows.forEach((row) => {
+    const disciplineKey = row.discipline ?? "__unassigned__";
+    grouped[disciplineKey] ??= {};
+    grouped[disciplineKey]![row.month] = (grouped[disciplineKey]![row.month] ?? 0) + row.revenueValue;
+  });
+
+  return {
+    currencyCode: dataset.currencyCode,
+    months: monthKeys,
+    series: Object.entries(grouped)
+      .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+      .map(([disciplineKey, monthValues]) => ({
+        disciplineId: disciplineKey === "__unassigned__" ? "unassigned" : disciplineKey,
+        disciplineName:
+          disciplineKey === "__unassigned__"
+            ? "Unassigned"
+            : formatDatasetDisciplineLabel(disciplineKey),
+        points: monthKeys.map((month) => ({
+          month,
+          grossAmount: monthValues[month] ?? 0,
+          weightedAmount: 0,
+        })),
+      })),
+  };
+}
+
+export function buildForecastRevenueFromDataset(
+  dataset: OperationalDashboardResponse["forecastDataset"],
+): OperationalDashboardResponse["forecastRevenue"] {
+  const monthKeys = dataset.aggregations.totalsByMonth.map((item) => item.month);
+  const projectById = Object.fromEntries(
+    dataset.projects.map((project) => [project.projectId, project]),
+  );
+  const rowsByProject = new Map<
+    string,
+    OperationalDashboardResponse["forecastDataset"]["monthlyRows"]
+  >();
+
+  dataset.monthlyRows.forEach((row) => {
+    const existing = rowsByProject.get(row.projectId) ?? [];
+    existing.push(row);
+    rowsByProject.set(row.projectId, existing);
+  });
+
+  const monthlyStatusTotals = monthKeys.map((month) => {
+    const estimatedAmount = dataset.monthlyRows
+      .filter((row) => row.month === month && projectById[row.projectId]?.status === "estimated")
+      .reduce((sum, row) => sum + row.revenueValue, 0);
+    const awardedAmount = dataset.monthlyRows
+      .filter((row) => row.month === month && projectById[row.projectId]?.status === "awarded")
+      .reduce((sum, row) => sum + row.revenueValue, 0);
+    const lostAmount = dataset.monthlyRows
+      .filter((row) => row.month === month && projectById[row.projectId]?.status === "lost")
+      .reduce((sum, row) => sum + row.revenueValue, 0);
+
+    return {
+      month,
+      bidAmount: estimatedAmount,
+      weightedBidAmount: 0,
+      awardedAmount,
+      activeAmount: 0,
+      completeAmount: 0,
+      bookedAmount: awardedAmount,
+      lostAmount,
+    };
+  });
+
+  const overallStatusTotals = dataset.aggregations.totalsByStatus.map((item) => ({
+    status: mapDatasetStatusToLegacyStatus(item.status),
+    label: formatStatusLabel(mapDatasetStatusToLegacyStatus(item.status)),
+    projectCount: dataset.projects.filter((project) => project.status === item.status).length,
+    totalAmount: item.revenueValue,
+    weightedTotalAmount: 0,
+  }));
+
+  const projectRows = dataset.projects.map((project) => {
+    const projectMonthlyRows = rowsByProject.get(project.projectId) ?? [];
+    const monthValues = monthKeys.map((month) => {
+      const amount = projectMonthlyRows
+        .filter((row) => row.month === month)
+        .reduce((sum, row) => sum + row.revenueValue, 0);
+
+      return {
+        month,
+        amount,
+        weightedAmount: 0,
+        actualAmount: 0,
+        bookedAmount: project.status === "awarded" ? amount : 0,
+      };
+    });
+    const disciplineGroups = new Map<
+      string,
+      OperationalDashboardResponse["forecastDataset"]["monthlyRows"]
+    >();
+
+    projectMonthlyRows.forEach((row) => {
+      const disciplineKey = row.discipline ?? "__unassigned__";
+      const existing = disciplineGroups.get(disciplineKey) ?? [];
+      existing.push(row);
+      disciplineGroups.set(disciplineKey, existing);
+    });
+    const disciplineRows = Array.from(disciplineGroups.entries())
+      .map(([disciplineKey, detailRows]) => {
+        const detailMonthValues = Object.fromEntries(
+          monthKeys.map((month) => [
+            month,
+            detailRows
+              .filter((row) => row.month === month)
+              .reduce((sum, row) => sum + row.revenueValue, 0),
+          ]),
+        );
+
+        return {
+          disciplineId: disciplineKey === "__unassigned__" ? "unassigned" : disciplineKey,
+          disciplineName:
+            disciplineKey === "__unassigned__"
+              ? "Unassigned"
+              : formatDatasetDisciplineLabel(disciplineKey),
+          basePhasingProfile: "contract_dataset",
+          forecastMethod: summarizeMethods(detailRows.map((row) => row.allocationMethod)),
+          lineCount: detailRows.length,
+          manualOverrideLineCount: detailRows.filter((row) => row.overrideFlag).length,
+          totalAmount: detailRows.reduce((sum, row) => sum + row.revenueValue, 0),
+          weightedTotalAmount: 0,
+          monthValues: monthKeys.map((month) => ({
+            month,
+            amount: detailMonthValues[month] ?? 0,
+            weightedAmount: 0,
+            actualAmount: 0,
+            bookedAmount:
+              project.status === "awarded"
+                ? detailMonthValues[month] ?? 0
+                : 0,
+          })),
+        };
+      })
+      .sort((left, right) => right.totalAmount - left.totalAmount);
+
+    return {
+      projectId: project.projectId,
+      projectName: project.projectName,
+      clientId: project.projectId,
+      clientName: project.client,
+      status: mapDatasetStatusToLegacyStatus(project.status),
+      quoteEntryDate: null,
+      executionStartDate: project.executionStartDate ?? null,
+      executionEndDate: project.executionEndDate ?? null,
+      quoteToExecutionLeadMonths: null,
+      spanningMonthCount: monthValues.filter((item) => item.amount > 0).length,
+      basePhasingProfile: "contract_dataset",
+      forecastMethod: summarizeMethods(projectMonthlyRows.map((row) => row.allocationMethod)),
+      manualOverrideLineCount: projectMonthlyRows.filter((row) => row.overrideFlag).length,
+      totalRevenue: project.totalForecastValue,
+      windowRevenue: project.totalForecastValue,
+      weightedTotalRevenue: 0,
+      windowWeightedRevenue: 0,
+      forecastVersionId: null,
+      forecastStatus: null,
+      scenarioKey: dataset.scenarioKey,
+      changeSummary: null,
+      explanationSummary: null,
+      monthValues,
+      disciplineRows,
+    };
+  });
+
+  return {
+    currencyCode: dataset.currencyCode,
+    months: monthKeys,
+    monthlyStatusTotals,
+    overallStatusTotals,
+    projectRows,
+  };
 }

@@ -8,11 +8,32 @@ describe("project query keys", () => {
       "project-predictive-guidance",
       "project-1",
       "all",
+      "current",
+      25,
     ]);
 
     expect(
       queryKeys.projectPredictiveGuidance("project-1", { disciplineId: "grade" }),
-    ).toEqual(["project-predictive-guidance", "project-1", "grade"]);
+    ).toEqual([
+      "project-predictive-guidance",
+      "project-1",
+      "grade",
+      "current",
+      25,
+    ]);
+
+    expect(
+      queryKeys.projectPredictiveGuidance("project-1", {
+        quoteVersionId: "version-2",
+        limit: 10,
+      }),
+    ).toEqual([
+      "project-predictive-guidance",
+      "project-1",
+      "all",
+      "version-2",
+      10,
+    ]);
   });
 
   it("keeps persisted prediction run queries stable by project and run id", () => {

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
@@ -54,6 +55,7 @@ from app.modules.predictions.schemas import (
     PredictionScenarioUpdateRequest,
     PredictionOverridesPatchRequest,
 )
+from app.modules.predictions.spend_prediction import build_spend_prediction
 from app.modules.predictions.types import ActualsSummary, PredictionContext, PredictionModuleResult
 from app.modules.predictions.utils import amount_or_none, confidence_label, month_key
 from app.modules.predictions.win_probability import build_win_probability
@@ -122,25 +124,38 @@ class PredictionService:
         )
         return list(result.scalars())
 
-    def _load_actuals_summary(self, session: Session, project_id: str) -> ActualsSummary:
+    def _load_project_actuals_summaries(
+        self,
+        session: Session,
+        project_ids: list[str],
+    ) -> dict[str, ActualsSummary]:
+        normalized_project_ids = list(dict.fromkeys(project_ids))
+        if not normalized_project_ids:
+            return {}
         rows = list(
             session.scalars(
                 select(MappedActual).where(
-                    MappedActual.project_id == project_id,
+                    MappedActual.project_id.in_(normalized_project_ids),
                     MappedActual.is_current.is_(True),
                 )
             )
         )
-        summary = ActualsSummary()
-        third_party_costs = 0.0
+        summaries = {
+            project_id: ActualsSummary()
+            for project_id in normalized_project_ids
+        }
+        third_party_costs_by_project: dict[str, float] = defaultdict(float)
         for row in rows:
+            summary = summaries.setdefault(row.project_id, ActualsSummary())
             activity_date = row.work_date or row.posting_date
             month = month_key(activity_date) if activity_date is not None else None
             amount = float(row.amount)
             if row.financial_type == CetaRowFinancialType.revenue:
                 summary.current_revenue_total += amount
                 if month is not None:
-                    summary.monthly_revenue[month] = summary.monthly_revenue.get(month, 0.0) + amount
+                    summary.monthly_revenue[month] = (
+                        summary.monthly_revenue.get(month, 0.0) + amount
+                    )
                 if row.discipline_id is not None:
                     summary.discipline_revenue[row.discipline_id] = (
                         summary.discipline_revenue.get(row.discipline_id, 0.0) + amount
@@ -148,17 +163,29 @@ class PredictionService:
             else:
                 summary.current_cost_total += amount
                 if month is not None:
-                    summary.monthly_costs[month] = summary.monthly_costs.get(month, 0.0) + amount
+                    summary.monthly_costs[month] = (
+                        summary.monthly_costs.get(month, 0.0) + amount
+                    )
                 if row.discipline_id is not None:
                     summary.discipline_costs[row.discipline_id] = (
                         summary.discipline_costs.get(row.discipline_id, 0.0) + amount
                     )
                 if row.vendor_name or row.cost_category_key == "third_party":
-                    third_party_costs += amount
-        if summary.current_cost_total > 0:
-            summary.third_party_cost_share_pct = round((third_party_costs / summary.current_cost_total) * 100, 2)
-        summary.current_month_count = len(summary.monthly_revenue)
-        return summary
+                    third_party_costs_by_project[row.project_id] += amount
+        for project_id, summary in summaries.items():
+            if summary.current_cost_total > 0:
+                summary.third_party_cost_share_pct = round(
+                    (third_party_costs_by_project[project_id] / summary.current_cost_total) * 100,
+                    2,
+                )
+            summary.current_month_count = len(summary.monthly_revenue)
+        return summaries
+
+    def _load_actuals_summary(self, session: Session, project_id: str) -> ActualsSummary:
+        return self._load_project_actuals_summaries(session, [project_id]).get(
+            project_id,
+            ActualsSummary(),
+        )
 
     def _request_context_matches(
         self, existing: dict[str, object] | None, expected: dict[str, object]
@@ -235,7 +262,8 @@ class PredictionService:
             session,
             target_quote_version.id if target_quote_version is not None else None,
         )
-        actuals = self._load_actuals_summary(session, project_id)
+        actuals_by_project_id = self._load_project_actuals_summaries(session, project_ids)
+        actuals = actuals_by_project_id.get(project_id, ActualsSummary())
         request_context = {
             "quoteVersionId": quote_version_id,
             "disciplineId": discipline_id,
@@ -252,6 +280,7 @@ class PredictionService:
             quote_line_items=quote_line_items,
             schedule_ranges=list(target_project_detail.schedule_ranges),
             actuals=actuals,
+            project_actuals_by_project_id=actuals_by_project_id,
             request_context=request_context,
         )
         return context, comparables, recommendations
@@ -401,6 +430,12 @@ class PredictionService:
             feature_snapshot=feature_snapshot,
             discipline_code_filter=discipline_id,
         )
+        spend_module = build_spend_prediction(
+            context,
+            quote_guidance=quote_module.output,
+            fallback_tier=fallback_module.fallback_tier,
+            feature_snapshot=feature_snapshot,
+        )
         omitted_discipline_ids = [
             item["disciplineId"]
             for item in discipline_module.output["items"]
@@ -433,6 +468,7 @@ class PredictionService:
         )
         scenario_module = build_scenarios(
             quote_guidance=quote_module.output,
+            spend_prediction=spend_module.output,
             discipline_predictions=discipline_module.output["items"],
             monthly_revenue_spread=revenue_module.output["items"],
             overrun_risk=risk_module.output["overrunRisk"],
@@ -457,6 +493,7 @@ class PredictionService:
                 fallback_module,
                 quote_module,
                 discipline_module,
+                spend_module,
                 revenue_module,
                 win_module,
                 risk_module,
@@ -470,6 +507,7 @@ class PredictionService:
             fallback_module,
             quote_module,
             discipline_module,
+            spend_module,
             revenue_module,
             win_module,
             risk_module,
@@ -479,8 +517,9 @@ class PredictionService:
         ]
         methodology_summary = (
             "Prediction runs reuse explainable comparable scoring, benchmark variance history, "
-            "quote structure, schedule timing, and in-flight actuals. Modules persist their own "
-            "outputs, fallbacks, and explanations so guidance remains auditable and editable."
+            "quote structure, schedule timing, mapped revenue and cost actuals, and in-flight "
+            "actuals. Modules persist their own outputs, fallbacks, and explanations so guidance "
+            "remains auditable and editable."
         )
         run = self._persist_run(
             session,
@@ -844,10 +883,17 @@ class PredictionService:
             for item in run.scenarios
         }
         assumptions[scenario_key] = payload.assumption_overrides
+        module_map = {module.module_key: module for module in run.module_outputs}
+        spend_output = (
+            module_map.get("spend_prediction").output_json
+            if module_map.get("spend_prediction")
+            else None
+        )
         scenario_module = build_scenarios(
             quote_guidance=detail.likely_quote_range.model_dump(mode="json", by_alias=True)
             if detail.likely_quote_range is not None
             else None,
+            spend_prediction=spend_output,
             discipline_predictions=[item.model_dump(mode="json", by_alias=True) for item in detail.discipline_usage],
             monthly_revenue_spread=[item.model_dump(mode="json", by_alias=True) for item in detail.monthly_revenue_spread],
             overrun_risk=detail.overrun_risk.model_dump(mode="json", by_alias=True),
