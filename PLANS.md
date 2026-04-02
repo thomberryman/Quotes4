@@ -89,3 +89,18 @@ The canonical forecast projection must expose:
 - Revenue-outturn guidance remains the existing `predictedActualAmount` and variance signal.
 - Comparable cost history comes from mapped cost actuals on comparable projects, not benchmark revenue variance.
 - Thin cost evidence should surface as fallback or unavailable, not fabricated totals.
+
+# Strict Predicted Spend Advisory Contract
+
+## Summary
+
+- Define a strict, explicit predicted spend advisory contract that is independent from revenue forecast contracts.
+- Cover project-level spend, discipline-level spend, quote-vs-predicted comparison, and advisory UI state handling.
+- Provide runtime validation helpers so consumers can enforce ordering/score/state rules.
+
+## Delivery Steps
+
+1. Add shared contract types for predicted spend in `packages/contracts/src/predicted-spend-contract.ts`.
+2. Export contract types from `packages/contracts/src/index.ts` for API/UI consumers.
+3. Document exact JSON shapes, UI state contract, validation rules, and separation rules in `docs/predicted-spend-contract.md`.
+4. Run contracts typecheck to confirm compile health.
