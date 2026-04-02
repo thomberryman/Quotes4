@@ -10,6 +10,7 @@ import {
   formatPercent,
   formatStatusLabel,
 } from "@/lib/format";
+import { getExpectedScenarioSpend } from "@/lib/predictions/advisory-spend";
 
 function confidenceTone(confidence?: string) {
   if (confidence === "high") {
@@ -39,6 +40,7 @@ export function ProjectPredictiveGuidancePanel({
   const likelyRange = predictiveGuidance.likelyQuoteRange;
   const currencyCode = predictiveGuidance.target.quoteCurrencyCode;
   const missingCriticalInputs = predictiveGuidance.missingCriticalInputs ?? [];
+  const advisorySpend = getExpectedScenarioSpend(predictiveGuidance);
 
   return (
     <div className="space-y-6">
@@ -139,6 +141,62 @@ export function ProjectPredictiveGuidancePanel({
             </p>
           </div>
         ) : null}
+      </SectionCard>
+
+      <SectionCard
+        title="Advisory Predicted Spend"
+        description="Read-only predicted spend from the expected scenario. Advisory only and separate from quote totals and revenue forecasts."
+        actions={
+          advisorySpend ? <StatusBadge value={advisorySpend.confidence} /> : null
+        }
+      >
+        {advisorySpend ? (
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <SummaryStat
+                label="Predicted total spend"
+                value={
+                  advisorySpend.predictedTotalCost != null
+                    ? formatCurrency(advisorySpend.predictedTotalCost, currencyCode)
+                    : "Not available"
+                }
+                hint={formatStatusLabel(advisorySpend.basis)}
+              />
+              <SummaryStat
+                label="Current spend"
+                value={formatCurrency(advisorySpend.currentActualCost ?? 0, currencyCode)}
+                hint={`${advisorySpend.confidenceScore.toFixed(0)} confidence score`}
+              />
+              <SummaryStat
+                label="Remaining spend"
+                value={
+                  advisorySpend.predictedRemainingCost != null
+                    ? formatCurrency(advisorySpend.predictedRemainingCost, currencyCode)
+                    : "Not available"
+                }
+                hint={formatStatusLabel(advisorySpend.fallbackTier)}
+              />
+              <SummaryStat
+                label="Implied margin (advisory)"
+                value={
+                  advisorySpend.impliedMarginAmount != null
+                    ? formatCurrency(advisorySpend.impliedMarginAmount, currencyCode)
+                    : "Not available"
+                }
+                hint={
+                  advisorySpend.impliedMarginPct != null
+                    ? formatPercent(advisorySpend.impliedMarginPct)
+                    : "Predicted spend margin only"
+                }
+              />
+            </div>
+          </div>
+        ) : (
+          <EmptyState
+            title="No advisory spend summary yet"
+            description="Refresh prediction guidance after comparable and mapped cost actual evidence is available."
+          />
+        )}
       </SectionCard>
 
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">

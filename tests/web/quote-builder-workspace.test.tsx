@@ -161,7 +161,35 @@ function buildGuidance(
     },
     riskSignals: [],
     winProbability: null,
-    scenarios: [],
+    scenarios: [
+      {
+        scenarioKey: "base",
+        title: "Base",
+        spendSummary: {
+          currentActualCost: 15000,
+          predictedTotalCost: median * 0.7,
+          predictedRemainingCost: median * 0.7 - 15000,
+          impliedMarginAmount: median * 0.3,
+          impliedMarginPct: 30,
+          confidence: "medium",
+          confidenceScore: 68,
+          fallbackTier: "high_similarity_history",
+          basis: "comparables_with_current_actuals_floor",
+          disciplineSpend: [
+            {
+              disciplineId: "discipline_offline",
+              disciplineName: "Offline",
+              currentActualCost: 7000,
+              predictedTotalCost: median * 0.3,
+              predictedRemainingCost: median * 0.3 - 7000,
+              costSharePct: 43,
+              confidence: "medium",
+              sampleSize: 3,
+            },
+          ],
+        },
+      },
+    ],
     topComparables: [
       {
         projectId: "project_comp_1",
@@ -259,6 +287,7 @@ describe("QuoteBuilderWorkspace", () => {
     const { container, queryClient, root } = await renderWorkspace();
 
     expect(container.textContent).toContain("Comparable quote guidance");
+    expect(container.textContent).toContain("Advisory predicted spend comparison");
     expect(container.textContent).toContain("£120,000");
     expect(apiClient.getProjectPredictiveGuidance).toHaveBeenCalledWith(
       "project_alpha",

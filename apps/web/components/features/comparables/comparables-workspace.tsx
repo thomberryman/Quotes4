@@ -13,6 +13,7 @@ import { ApiClientError } from "@quotes4/contracts";
 import { ProjectPredictiveGuidancePanel } from "@/components/features/projects/project-predictive-guidance-panel";
 import { getBrowserApiClient } from "@/lib/api/browser-client";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { getExpectedScenarioSpend } from "@/lib/predictions/advisory-spend";
 import { queryKeys } from "@/lib/query/keys";
 
 import { CheckboxField } from "@/components/forms/checkbox-field";
@@ -123,6 +124,7 @@ export function ComparablesWorkspace({
   const comparablesData = comparablesQuery.data ?? initialComparables;
   const predictiveGuidanceData =
     predictiveGuidanceQuery.data ?? initialPredictiveGuidance;
+  const advisorySpend = getExpectedScenarioSpend(predictiveGuidanceData);
   const recommendationsData = recommendationsQuery.data ?? initialRecommendations;
 
   useEffect(() => {
@@ -317,6 +319,82 @@ export function ComparablesWorkspace({
             )}
           </div>
         </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Spend-Focused Comparison (Advisory)"
+        description="Comparable project cost behavior and discipline mix used for advisory predicted spend. This does not change revenue dashboard totals."
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          <SummaryStat
+            label="Predicted spend total"
+            value={
+              advisorySpend?.predictedTotalCost != null
+                ? formatCurrency(
+                    advisorySpend.predictedTotalCost,
+                    predictiveGuidanceData.target.quoteCurrencyCode,
+                  )
+                : "Not available"
+            }
+          />
+          <SummaryStat
+            label="Spend confidence"
+            value={advisorySpend ? advisorySpend.confidence : "Not available"}
+            hint={advisorySpend ? advisorySpend.fallbackTier : "No spend summary"}
+          />
+          <SummaryStat
+            label="Comparables referenced"
+            value={predictiveGuidanceData.topComparables?.length ?? 0}
+            hint={`${predictiveGuidanceData.modelInfo.comparableProjectsUsed} used`}
+          />
+        </div>
+
+        {advisorySpend?.disciplineSpend?.length ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <th className="px-4 py-3">Discipline</th>
+                  <th className="px-4 py-3">Predicted spend</th>
+                  <th className="px-4 py-3">Spend share</th>
+                  <th className="px-4 py-3">Current spend</th>
+                  <th className="px-4 py-3">Confidence</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {advisorySpend.disciplineSpend.map((discipline) => (
+                  <tr key={discipline.disciplineId}>
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {discipline.disciplineName ??
+                        discipline.disciplineCode ??
+                        discipline.disciplineId}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {discipline.predictedTotalCost != null
+                        ? formatCurrency(
+                            discipline.predictedTotalCost,
+                            predictiveGuidanceData.target.quoteCurrencyCode,
+                          )
+                        : "Not available"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {discipline.costSharePct.toFixed(1)}%
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {formatCurrency(
+                        discipline.currentActualCost,
+                        predictiveGuidanceData.target.quoteCurrencyCode,
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge value={discipline.confidence} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </SectionCard>
 
       <ProjectPredictiveGuidancePanel
