@@ -1,20 +1,27 @@
-node_modules
-.next
-dist
-coverage
-.turbo
-.DS_Store
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment files
 .env
-.env.local
-.env.*.local
-apps/web/.next
-apps/web/out
-apps/api/dist
-apps/worker/dist
-packages/db/generated
-packages/db/prisma/dev.db
-__pycache__
-.pytest_cache
-.ruff_cache
-.venv
-tmp
+.env.*
+
+# Mac junk
+.DS_Store
+
+# Logs
+*.log
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Build/output
+dist/
+build/
+
+# SQLite
+*.sqlite3
+*.db
