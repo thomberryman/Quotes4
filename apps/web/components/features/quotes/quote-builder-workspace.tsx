@@ -15,6 +15,7 @@ import { ApiClientError } from "@quotes4/contracts";
 
 import { getBrowserApiClient } from "@/lib/api/browser-client";
 import { formatCurrency, formatDate, formatStatusLabel } from "@/lib/format";
+import { getExpectedScenarioSpend } from "@/lib/predictions/advisory-spend";
 import { queryKeys } from "@/lib/query/keys";
 
 import { InlineActionBar } from "@/components/forms/inline-action-bar";
@@ -180,6 +181,7 @@ export function QuoteBuilderWorkspace({
       : ["project-predictive-guidance", projectId, "none"],
   });
   const predictiveGuidance = predictiveGuidanceQuery.data ?? null;
+  const advisorySpend = getExpectedScenarioSpend(predictiveGuidance);
 
   useEffect(() => {
     if (!versionQuery.data) {
@@ -223,6 +225,15 @@ export function QuoteBuilderWorkspace({
     0,
   );
   const computedTotal = computedSubtotal + taxAmount;
+  const quoteByDiscipline = sections.reduce<Record<string, number>>((acc, section) => {
+    section.lineItems.forEach((lineItem) => {
+      if (!lineItem.disciplineId) {
+        return;
+      }
+      acc[lineItem.disciplineId] = (acc[lineItem.disciplineId] ?? 0) + lineItem.amount;
+    });
+    return acc;
+  }, {});
   const pricingContext = {
     discountPercent: discountPercent ? Number(discountPercent) : null,
     marginPercent: marginPercent ? Number(marginPercent) : null,
@@ -836,6 +847,46 @@ export function QuoteBuilderWorkspace({
                         hint={`${predictiveGuidance.dataSufficiencyScore.toFixed(0)}% data sufficiency`}
                       />
                     </div>
+                    <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Advisory predicted spend comparison
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Predicted spend is advisory only. It does not write quote totals or change revenue forecasts.
+                      </p>
+                      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <SummaryStat
+                          label="Quote total"
+                          value={formatCurrency(computedTotal, currencyCode)}
+                        />
+                        <SummaryStat
+                          label="Predicted spend"
+                          value={
+                            advisorySpend?.predictedTotalCost != null
+                              ? formatCurrency(advisorySpend.predictedTotalCost, currencyCode)
+                              : "Not available"
+                          }
+                          hint={advisorySpend ? formatStatusLabel(advisorySpend.confidence) : "No spend scenario output"}
+                        />
+                        <SummaryStat
+                          label="Gap (quote - predicted spend)"
+                          value={
+                            advisorySpend?.predictedTotalCost != null
+                              ? formatCurrency(computedTotal - advisorySpend.predictedTotalCost, currencyCode)
+                              : "Not available"
+                          }
+                        />
+                        <SummaryStat
+                          label="Implied margin (advisory)"
+                          value={
+                            advisorySpend?.impliedMarginPct != null
+                              ? `${advisorySpend.impliedMarginPct.toFixed(1)}%`
+                              : "Not available"
+                          }
+                          hint="Based on predicted spend, not final actuals"
+                        />
+                      </div>
+                    </div>
 
                     {predictiveGuidance.disciplineUsage.length > 0 ? (
                       <div className="mt-4 overflow-x-auto">
@@ -874,6 +925,51 @@ export function QuoteBuilderWorkspace({
                                   </td>
                                 </tr>
                               ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+
+                    {advisorySpend?.disciplineSpend?.length ? (
+                      <div className="mt-4 overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200 text-sm">
+                          <thead>
+                            <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              <th className="px-3 py-2">Discipline</th>
+                              <th className="px-3 py-2">Quoted</th>
+                              <th className="px-3 py-2">Predicted spend</th>
+                              <th className="px-3 py-2">Gap</th>
+                              <th className="px-3 py-2">Confidence</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {advisorySpend.disciplineSpend.map((item) => {
+                              const quoted = quoteByDiscipline[item.disciplineId] ?? 0;
+                              const predicted = item.predictedTotalCost ?? 0;
+                              return (
+                                <tr key={item.disciplineId}>
+                                  <td className="px-3 py-2 font-medium text-slate-900">
+                                    {item.disciplineName ?? item.disciplineCode ?? item.disciplineId}
+                                  </td>
+                                  <td className="px-3 py-2 text-slate-700">
+                                    {formatCurrency(quoted, currencyCode)}
+                                  </td>
+                                  <td className="px-3 py-2 text-slate-700">
+                                    {item.predictedTotalCost != null
+                                      ? formatCurrency(item.predictedTotalCost, currencyCode)
+                                      : "Not available"}
+                                  </td>
+                                  <td className="px-3 py-2 text-slate-700">
+                                    {item.predictedTotalCost != null
+                                      ? formatCurrency(quoted - predicted, currencyCode)
+                                      : "Not available"}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <StatusBadge value={item.confidence} />
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>

@@ -89,3 +89,28 @@ The canonical forecast projection must expose:
 - Revenue-outturn guidance remains the existing `predictedActualAmount` and variance signal.
 - Comparable cost history comes from mapped cost actuals on comparable projects, not benchmark revenue variance.
 - Thin cost evidence should surface as fallback or unavailable, not fabricated totals.
+
+# Advisory Predicted Spend UI Layer
+
+## Summary
+
+- Surface advisory predicted spend across project, quote, comparables, and forecast contexts without changing operational revenue behavior.
+- Keep quote value, revenue forecast, predicted spend, and actual spend explicitly separated in copy, APIs, and UI groupings.
+- Reuse persisted prediction run/scenario outputs and module explanations for traceability rather than mixing spend into forecast totals.
+
+## Delivery Steps
+
+1. Add spend-focused response helpers in the predictions API to expose expected-scenario spend summary, discipline spend, quote-vs-spend comparison, and supporting traceability metadata.
+2. Keep spend payloads advisory-only and read-only: no writes into quote totals, forecast totals, forecast monthly allocations, or dashboard revenue rollups.
+3. Extend project detail predictive guidance UI with an advisory spend summary panel (total/range/confidence/fallback/basis/top comparables/drivers).
+4. Extend quote builder guidance with quote-vs-predicted-spend stats, implied advisory margin/gap, and discipline-level quoted-vs-predicted spend comparisons.
+5. Extend comparables workspace with a spend-focused comparison mode showing comparable cost patterns, discipline mix, and historical quote-vs-actual context where present.
+6. Extend forecast editor with an advisory predicted spend section that clearly states it does not affect the operational revenue forecast.
+7. Optionally add a separate advisory dashboard panel/tab only if implemented as distinct from existing revenue totals/charts.
+8. Add regressions covering: project/quote/discipline spend rendering, comparable evidence visibility, confidence/fallback/explanations, and proof that revenue/quote totals are unchanged.
+
+## Assumptions
+
+- Spend is advisory prediction output derived from comparable and mapped actual-cost evidence.
+- Existing persisted prediction runs and scenarios remain the source for advisory spend traceability.
+- Existing operational dashboard totals and forecast calculations remain revenue-only.
